@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh toán thất bại</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #0f0f0f 0%, #111 100%); }
+    </style>
+</head>
+<body class="bg-black text-white min-h-screen flex items-center justify-center px-4 gradient-bg">
+<div class="w-full max-w-lg">
+    <div class="bg-neutral-900/80 backdrop-blur-xl border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden">
+        <!-- Header Icon -->
+        <div class="pt-10 pb-6 text-center">
+            <div class="mx-auto w-20 h-20 rounded-full bg-red-500/15 flex items-center justify-center border border-red-500/30">
+                <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="px-8 pb-10 text-center">
+            <h1 class="text-3xl font-bold tracking-tight mb-3">Thanh toán không thành công</h1>
+            <p class="text-neutral-400 text-base leading-relaxed">
+                Đơn hàng của bạn chưa được thanh toán. Vui lòng kiểm tra lại thông tin hoặc thử phương thức khác.
+            </p>
+        </div>
+
+        <!-- Error Details Box -->
+        <div class="mx-8 mb-8 bg-neutral-800/60 border border-neutral-700 rounded-xl p-5">
+            <div class="flex justify-between items-center py-3 border-b border-neutral-700 last:border-0">
+                <span class="text-neutral-400 text-sm">Mã đơn hàng</span>
+                <span id="orderId" class="font-mono text-sm font-semibold text-white">Đang tải...</span>
+            </div>
+            <div class="flex justify-between items-center py-3">
+                <span class="text-neutral-400 text-sm">Lý do thất bại</span>
+                <span id="errorMsg" class="text-sm font-medium text-red-400 max-w-48 text-right">Không xác định</span>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="px-8 pb-10 flex flex-col sm:flex-row gap-4">
+            <button onclick="retryPayment(event)"
+                    class="w-full bg-white text-black font-semibold py-3.5 px-6 rounded-xl hover:bg-neutral-200 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                Thử lại thanh toán
+            </button>
+            <a href="/"
+               class="w-full border border-neutral-700 text-white font-medium py-3.5 px-6 rounded-xl hover:bg-neutral-800 transition-all duration-200 text-center">
+                Quay về trang chủ
+            </a>
+        </div>
+    </div>
+
+    <!-- Footer hint -->
+    <p class="text-center text-neutral-600 text-xs mt-8">
+        Cần hỗ trợ? Liên hệ <a href="mailto:qhuyddbmt123@gmail.com" class="underline hover:text-white">qhuyddbmt123@gmail.com</a>
+    </p>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderIdFromUrl = urlParams.get('orderId');
+    const errorFromUrl = urlParams.get('error');
+
+    if (orderIdFromUrl) {
+        const orderCode = 'ORD-' + orderIdFromUrl.substring(0, 8).toUpperCase();
+        document.getElementById('orderId').textContent = orderCode;
+    }
+
+    if (errorFromUrl) {
+        let decodedError = decodeURIComponent(errorFromUrl);
+        const errorMap = {
+            'Invalid payment signature': 'Chữ ký thanh toán không hợp lệ',
+            'Insufficient balance': 'Số dư không đủ',
+            'Card expired': 'Thẻ đã hết hạn',
+            'Transaction declined': 'Giao dịch bị từ chối',
+            'Bank system error': 'Lỗi hệ thống ngân hàng'
+        };
+        document.getElementById('errorMsg').textContent = errorMap[decodedError] || decodedError;
+    }
+
+    function retryPayment(event) {
+        event.preventDefault();
+        if (orderIdFromUrl) {
+            window.location.href = '/api/v1/payments/create/' + orderIdFromUrl;
+        } else {
+            window.location.href = '/';
+        }
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh toán thành công</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #0a0a0a 0%, #111 100%); }
+        .confetti { position: absolute; width: 10px; height: 10px; background: #22c55e; border-radius: 50%; opacity: 0.8; animation: fall 3s linear infinite; }
+        @keyframes fall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 0.8; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-black text-white min-h-screen flex items-center justify-center px-4 gradient-bg overflow-hidden relative">
+<!-- Hiệu ứng pháo giấy nhẹ (tùy chọn bật) -->
+<div class="confetti" style="left: 10%; animation-delay: 0s;"></div>
+<div class="confetti" style="left: 20%; animation-delay: 0.3s; background: #10b981;"></div>
+<div class="confetti" style="left: 30%; animation-delay: 0.6s; background: #22c55e;"></div>
+<div class="confetti" style="left: 40%; animation-delay: 0.9s;"></div>
+<div class="confetti" style="left: 50%; animation-delay: 1.2s; background: #16a34a;"></div>
+<div class="confetti" style="left: 60%; animation-delay: 0.4s;"></div>
+<div class="confetti" style="left: 70%; animation-delay: 1s; background: #22c55e;"></div>
+<div class="confetti" style="left: 80%; animation-delay: 0.7s;"></div>
+<div class="confetti" style="left: 90%; animation-delay: 1.5s; background: #10b981;"></div>
+
+<div class="w-full max-w-lg z-10">
+    <div class="bg-neutral-900/80 backdrop-blur-xl border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden">
+        <!-- Success Icon -->
+        <div class="pt-10 pb-6 text-center">
+            <div class="mx-auto w-20 h-20 rounded-full bg-green-500/15 flex items-center justify-center border border-green-500/40 animate-pulse">
+                <svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="px-8 pb-8 text-center">
+            <h1 class="text-3xl font-bold tracking-tight mb-3">Thanh toán thành công!</h1>
+            <p class="text-neutral-400 text-base leading-relaxed max-w-md mx-auto">
+                Cảm ơn bạn đã mua sắm. Đơn hàng đã được xác nhận và đang được xử lý nhanh nhất có thể.
+            </p>
+        </div>
+
+        <!-- Order Info Box -->
+        <div class="mx-8 mb-8 bg-neutral-800/60 border border-neutral-700 rounded-xl p-5">
+            <div class="flex justify-between items-center py-3 border-b border-neutral-700">
+                <span class="text-neutral-400 text-sm">Mã đơn hàng</span>
+                <span id="orderId" class="font-mono text-sm font-bold text-green-400 tracking-wider">ORD-XXXXXXXX</span>
+            </div>
+            <div class="flex justify-between items-center py-3">
+                <span class="text-neutral-400 text-sm">Trạng thái thanh toán</span>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-500/15 text-green-400 border border-green-500/30">
+                        Đã thanh toán
+                    </span>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="px-8 pb-10 flex flex-col sm:flex-row gap-4">
+            <a href="/"
+               class="w-full bg-white text-black font-semibold py-3.5 px-6 rounded-xl hover:bg-neutral-200 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-center">
+                Tiếp tục mua sắm
+            </a>
+            <a href="/account/orders"
+               class="w-full border border-neutral-700 text-white font-medium py-3.5 px-6 rounded-xl hover:bg-neutral-800 transition-all duration-200 text-center">
+                Xem chi tiết đơn hàng
+            </a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center mt-8">
+        <p class="text-neutral-500 text-xs">
+            Email xác nhận đã được gửi đến hộp thư của bạn
+        </p>
+        <p class="text-center text-neutral-600 text-xs mt-8">
+            Cần hỗ trợ? Liên hệ <a href="mailto:qhuyddbmt123@gmail.com" class="underline hover:text-white">qhuyddbmt123@gmail.com</a>
+        </p>
+    </div>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderIdFromUrl = urlParams.get('orderId');
+
+    if (orderIdFromUrl) {
+        const orderCode = 'ORD-' + orderIdFromUrl.substring(0, 8).toUpperCase();
+        document.getElementById('orderId').textContent = orderCode;
+    }
+</script>
+</body>
+</html>
