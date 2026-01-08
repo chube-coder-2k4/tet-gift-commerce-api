@@ -22,7 +22,7 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     validate-on-migrate: true
-    baseline-version: 1
+    baseline-version: 0
 
 management:
   endpoint:

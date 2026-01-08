@@ -11,17 +11,17 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
         format_sql: true
   flyway:
-    enabled: true
+    enabled: false
     locations: classpath:db/migration
     baseline-on-migrate: true
     validate-on-migrate: true
-    baseline-version: 1
+    baseline-version: 0
   data:
     redis:
       host: ${REDIS_HOST}
@@ -55,6 +55,30 @@ spring:
             token-uri: https://www.googleapis.com/oauth2/v4/token
             user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
             user-name-attribute: sub
+  ai:
+    vertex:
+      ai:
+        gemini:
+          project-id: ${GOOGLE_CLOUD_PROJECT_ID}
+          location: us-central1
+          chat:
+            options:
+              model: gemini-1.5-pro
+              temperature: 0.7
+              max-output-tokens: 1000
+
+---
+
+gemini:
+  api:
+    key: AIzaSyDcTPSQZvgbz59QE3Q3wogfG6sdvE8NmLI
+    model: gemini-1.5-pro
+
+  options:
+    temperature: 0.7
+    max-output-tokens: 1000
+    top-p: 0.95
+    top-k: 40
 
 ---
 
