@@ -71,7 +71,7 @@ spring:
 
 gemini:
   api:
-    key: AIzaSyDcTPSQZvgbz59QE3Q3wogfG6sdvE8NmLI
+    key:
     model: gemini-1.5-pro
 
   options:
