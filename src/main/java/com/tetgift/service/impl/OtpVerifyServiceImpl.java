@@ -14,8 +14,6 @@ public class OtpVerifyServiceImpl implements OtpVerifyService {
     private final OtpVerifyRepository otpVerifyRepository;
     private final UserRepository userRepository;
 
-
-
     @Override
     public boolean verifyOtp(String email, String otp) {
         String storedOtp = otpVerifyRepository.findById(email).get().getOtp();
@@ -44,25 +42,7 @@ public class OtpVerifyServiceImpl implements OtpVerifyService {
         otpVerifyRepository.save(otpVerify);
     }
 
-    @Override
-    public String getOtp(String email) {
-        if(email == null || email.trim().isEmpty()) {
-            throw new IllegalArgumentException("Email cannot be null or empty");
-        }
-        OtpVerify otpVerify = otpVerifyRepository.findById((email)).orElse(null);
-        if(otpVerify == null) {
-            throw new IllegalArgumentException("No OTP found for the provided email");
-        }
-        return otpVerify.getOtp();
-    }
 
-    @Override
-    public void deleteOtp(String email) {
-        if(email == null || email.trim().isEmpty()) {
-            throw new IllegalArgumentException("Email cannot be null or empty");
-        }
-        otpVerifyRepository.findById(email).ifPresent(otpVerifyRepository::delete);
-    }
 
     @Override
     public String generateOtp() {
