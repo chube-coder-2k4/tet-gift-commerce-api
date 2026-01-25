@@ -4,8 +4,6 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 
-import java.util.UUID;
-
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,6 +13,6 @@ import java.util.UUID;
 public class OtpVerify {
     @Id
     private String email;
-    private UUID userId;
+    private Long userId;
     private String otp;
 }
