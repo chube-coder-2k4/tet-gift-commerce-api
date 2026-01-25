@@ -16,21 +16,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
-  flyway:
-    enabled: false
-    locations: classpath:db/migration
-    baseline-on-migrate: true
-    validate-on-migrate: true
-    baseline-version: 0
   data:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
-  rabbitmq:
-    host: ${RABBITMQ_HOST}
-    port: ${RABBITMQ_PORT}
-    username: ${RABBITMQ_USER}
-    password: ${RABBITMQ_PASSWORD}
   mail:
     host: ${MAIL_HOST}
     port: ${MAIL_PORT}
@@ -55,32 +44,7 @@ spring:
             token-uri: https://www.googleapis.com/oauth2/v4/token
             user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
             user-name-attribute: sub
-  ai:
-    vertex:
-      ai:
-        gemini:
-          project-id: ${GOOGLE_CLOUD_PROJECT_ID}
-          location: us-central1
-          chat:
-            options:
-              model: gemini-1.5-pro
-              temperature: 0.7
-              max-output-tokens: 1000
 
----
-
-gemini:
-  api:
-    key:
-    model: gemini-1.5-pro
-
-  options:
-    temperature: 0.7
-    max-output-tokens: 1000
-    top-p: 0.95
-    top-k: 40
-
----
 
 management:
   endpoint:
