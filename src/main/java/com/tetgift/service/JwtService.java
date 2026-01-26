@@ -5,7 +5,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
 public interface JwtService {
     String generateAccessToken(UserDetails userDetails);
@@ -15,5 +14,5 @@ public interface JwtService {
     String generateResetPasswordToken(UserDetails userDetails);
     Date extractExpiration(String token, TokenType tokenType);
     List<String> extractRole(String token, TokenType tokenType);
-    UUID extractUserId(String token, TokenType tokenType);
+    Long extractUserId(String token, TokenType tokenType);
 }
