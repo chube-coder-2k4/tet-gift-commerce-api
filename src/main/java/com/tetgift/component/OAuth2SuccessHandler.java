@@ -30,6 +30,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             googleLogin(attributes);
         } else if ("github".equalsIgnoreCase(registrationId)) {
             githubLogin(attributes);
+        } else if ("keycloak".equalsIgnoreCase(registrationId)) {
+            keycloakLogin(attributes);
         } else {
             log.warn("Unsupported OAuth2 provider: {}", registrationId);
         }
@@ -58,6 +60,16 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String name = (String) attributes.get("name");
         log.info("GitHub Login - Username: {}, Name: {}, Email: {}, Address: {}, Avatar: {}",
                 username, name, email, address, avatar);
+    }
+
+    private void keycloakLogin(Map<String,Object> attributes) {
+        String username = (String) attributes.get("preferred_username");
+        String email = (String) attributes.get("email");
+        String firstName = (String) attributes.get("given_name");
+        String lastName = (String) attributes.get("family_name");
+
+        log.info("Keycloak Login - Username: {}, Email: {}, First Name: {}, Last Name: {}",
+                username, email, firstName, lastName);
     }
 
 }
