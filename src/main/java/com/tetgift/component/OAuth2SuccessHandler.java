@@ -34,6 +34,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             log.warn("Unsupported OAuth2 provider: {}", registrationId);
         }
 
+
         setDefaultTargetUrl("/login-success");
         super.onAuthenticationSuccess(request, response, authentication);
     }
