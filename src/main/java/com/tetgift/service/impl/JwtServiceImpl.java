@@ -1,6 +1,5 @@
 package com.tetgift.service.impl;
 
-
 import com.tetgift.enums.TokenType;
 import com.tetgift.model.Users;
 import com.tetgift.service.JwtService;
@@ -137,10 +136,10 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public UUID extractUserId(String token, TokenType tokenType) {
+    public Long extractUserId(String token, TokenType tokenType) {
         Claims claims = extractAllClaims(token, tokenType);
         String userIdStr = claims.get("userId", String.class);
-        return userIdStr != null ? UUID.fromString(userIdStr) : null;
+        return userIdStr != null ? Long.parseLong(userIdStr) : null;
     }
 
 
