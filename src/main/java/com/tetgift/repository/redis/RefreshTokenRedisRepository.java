@@ -1,6 +1,6 @@
 package com.tetgift.repository.redis;
 
-import com.tetgift.model.redisModel.RefreshToken;
+import com.tetgift.model.redismodel.RefreshToken;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 

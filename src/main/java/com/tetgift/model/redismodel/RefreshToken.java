@@ -1,11 +1,10 @@
-package com.tetgift.model.redisModel;
+package com.tetgift.model.redismodel;
 
 import jakarta.persistence.Column;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 
-import java.util.UUID;
 
 @Getter
 @Setter

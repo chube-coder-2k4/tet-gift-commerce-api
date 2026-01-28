@@ -1,6 +1,6 @@
 package com.tetgift.service.impl;
 
-import com.tetgift.model.redisModel.RefreshToken;
+import com.tetgift.model.redismodel.RefreshToken;
 import com.tetgift.repository.redis.RefreshTokenRedisRepository;
 import com.tetgift.service.RefreshTokenService;
 

@@ -1,4 +1,4 @@
-package com.tetgift.model.redisModel;
+package com.tetgift.model.redismodel;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
