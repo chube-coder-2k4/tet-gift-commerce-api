@@ -1,6 +1,6 @@
 package com.tetgift.service;
 
-import com.tetgift.model.redisModel.RefreshToken;
+import com.tetgift.model.redismodel.RefreshToken;
 
 public interface RefreshTokenService {
     void deleteByUserId(Long userId);

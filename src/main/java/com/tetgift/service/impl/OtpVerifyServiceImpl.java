@@ -1,7 +1,7 @@
 package com.tetgift.service.impl;
 
 import com.tetgift.model.Users;
-import com.tetgift.model.redisModel.OtpVerify;
+import com.tetgift.model.redismodel.OtpVerify;
 import com.tetgift.repository.jpa.UserRepository;
 import com.tetgift.repository.redis.OtpVerifyRepository;
 import com.tetgift.service.OtpVerifyService;

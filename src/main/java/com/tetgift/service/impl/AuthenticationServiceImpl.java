@@ -9,7 +9,7 @@ import com.tetgift.enums.TokenType;
 import com.tetgift.exception.InvalidDataException;
 import com.tetgift.exception.UserNotFoundException;
 import com.tetgift.model.Users;
-import com.tetgift.model.redisModel.RefreshToken;
+import com.tetgift.model.redismodel.RefreshToken;
 import com.tetgift.repository.jpa.UserRepository;
 import com.tetgift.service.AuthenticationService;
 import com.tetgift.service.JwtService;
