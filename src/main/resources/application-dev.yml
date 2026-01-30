@@ -5,9 +5,9 @@ spring:
   application:
     name: commerce-gateway-development
   datasource:
-    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB}
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/${POSTGRES_DB}}
+    username: ${SPRING_DATASOURCE_USERNAME:${POSTGRES_USER}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD}}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -46,6 +46,12 @@ spring:
             scope: user:email,read:email
             authorization-grant-type: authorization_code
             redirect-uri: "{baseUrl}/login/oauth2/code/github"
+          keycloak:
+            client-id: ${KEYCLOAK_CLIENT_ID}
+            client-secret: ${KEYCLOAK_CLIENT_SECRET}
+            scope: openid,profile,email
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/keycloak"
         provider:
           google:
             issuer-uri: https://accounts.google.com
@@ -54,6 +60,8 @@ spring:
             token-uri: https://github.com/login/oauth/access_token
             user-info-uri: https://api.github.com/user
             user-name-attribute: login
+          keycloak:
+            issuer-uri: ${KEYCLOAK_ISSUER_URI}
 
 
 management:
