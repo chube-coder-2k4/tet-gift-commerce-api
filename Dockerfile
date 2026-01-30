@@ -11,7 +11,9 @@ RUN mvn clean package -DskipTests
 FROM amazoncorretto:21-alpine
 WORKDIR /app
 
+ENV JAVA_OPTS=""
+
 COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8085
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

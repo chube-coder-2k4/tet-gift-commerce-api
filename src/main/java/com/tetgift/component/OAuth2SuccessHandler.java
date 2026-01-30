@@ -37,7 +37,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         }
 
 
-        setDefaultTargetUrl("/login-success");
         super.onAuthenticationSuccess(request, response, authentication);
     }
 

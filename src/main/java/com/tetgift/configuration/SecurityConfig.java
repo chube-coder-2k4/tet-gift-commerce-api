@@ -2,6 +2,7 @@ package com.tetgift.configuration;
 
 import com.tetgift.component.JwtAccessDeniedHandler;
 import com.tetgift.component.JwtAuthenticationEntryPoint;
+import com.tetgift.component.OAuth2SuccessHandler;
 import com.tetgift.component.PreFilter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class SecurityConfig {
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final UserDetailsService userDetailsService;
     private final PasswordConfig passwordConfig;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private static final String[] AUTH_WHITELIST = {
             "/api/v1/auth/**",
             "/v3/api-docs/**",
@@ -72,6 +74,12 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable);
+        http.oauth2Login(oauth2 -> oauth2
+                .loginPage("/api/v1/auth/oauth2/authorize-client")
+                .defaultSuccessUrl("http://localhost:3000/oauth2/redirect", true)
+                .failureUrl("http://localhost:3000/login?error=true")
+                .successHandler(oAuth2SuccessHandler)
+        );
         return http.build();
     }
 
