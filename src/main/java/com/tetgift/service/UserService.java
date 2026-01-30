@@ -12,7 +12,7 @@ public interface UserService {
 
     Users findByUsername(String username);
 
-    Long saveUser(UserRequest request) throws MessagingException, UnsupportedEncodingException;
+    Long saveUser(UserRequest request);
 
     Long updateUser(Long userId, UserUpdateRequest request);
 
