@@ -3,6 +3,7 @@ package com.tetgift.controller;
 import com.tetgift.dto.request.UserRequest;
 import com.tetgift.dto.response.ResponseData;
 import com.tetgift.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/register")
+    @Operation(summary = "Register User", description = "Register a new user in the system")
     public ResponseEntity<ResponseData<Long>> registerUser(@RequestBody @Valid UserRequest request) {
         Long userId = userService.saveUser(request);
         return ResponseEntity
