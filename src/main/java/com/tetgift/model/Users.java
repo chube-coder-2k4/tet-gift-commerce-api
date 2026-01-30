@@ -26,8 +26,6 @@ public class Users extends BaseEntity<Long> implements UserDetails {
     private boolean isVerify = false;
     private boolean isActive = true;
     private boolean isLocked = false;
-    @Enumerated(EnumType.STRING)
-    private LoginType provider = LoginType.LOCAL;
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "user")
     private Set<Address> addresses = new HashSet<>();
 
