@@ -12,7 +12,6 @@ services:
     container_name: commerce-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: commercegatewaydb
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 12345
       PGDATA: /var/lib/postgresql/data/pgdata
@@ -21,11 +20,8 @@ services:
       - ./initdb.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - commerce-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    ports:
+      - "5432:5432"
 
   redis:
     image: redis:7-alpine
@@ -36,6 +32,8 @@ services:
       - redis-data:/data
     networks:
       - commerce-network
+    ports:
+      - "6379:6379"
 
   keycloak:
     image: quay.io/keycloak/keycloak:25.0.6
@@ -53,14 +51,6 @@ services:
       - "8080:8080"
     networks:
       - commerce-network
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/health/ready" ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    depends_on:
-      postgres:
-        condition: service_healthy
 
   app:
     build:
@@ -68,13 +58,6 @@ services:
       dockerfile: Dockerfile
     container_name: commerce-app
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-      keycloak:
-        condition: service_healthy
     environment:
       JAVA_OPTS: -Xmx512m -Xms256m
     ports:
