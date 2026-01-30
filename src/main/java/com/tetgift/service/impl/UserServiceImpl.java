@@ -39,11 +39,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Long saveUser(UserRequest request) throws MessagingException, UnsupportedEncodingException {
+    public Long saveUser(UserRequest request){
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new InvalidDataException("Email already exists");
         }
-        if (userRepository.findByUsername(request.getEmail()).isPresent()) {
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new InvalidDataException("Username already exists");
         }
         Users user = usersMapper.toEntity(request);
