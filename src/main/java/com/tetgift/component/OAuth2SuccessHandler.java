@@ -1,6 +1,10 @@
 package com.tetgift.component;
 
+import com.tetgift.model.Users;
+import com.tetgift.repository.jpa.UserRepository;
+import com.tetgift.service.JwtService;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -12,11 +16,16 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+    private final UserRepository userRepository;
+    private final JwtService jwtService;
+
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,Authentication authentication)
             throws IOException, ServletException {
@@ -26,49 +35,33 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
         String registrationId = oauthToken.getAuthorizedClientRegistrationId();
         Map<String, Object> attributes = oauthToken.getPrincipal().getAttributes();
-        if ("google".equalsIgnoreCase(registrationId)) {
-            googleLogin(attributes);
-        } else if ("github".equalsIgnoreCase(registrationId)) {
-            githubLogin(attributes);
-        } else if ("keycloak".equalsIgnoreCase(registrationId)) {
-            keycloakLogin(attributes);
-        } else {
-            log.warn("Unsupported OAuth2 provider: {}", registrationId);
-        }
-
-
-        super.onAuthenticationSuccess(request, response, authentication);
-    }
-
-    private void googleLogin(Map<String,Object> attributes) {
-        String email = (String) attributes.get("email");
-        String name = (String) attributes.get("name");
-        String firstName = (String) attributes.get("given_name");
-        String lastName = (String) attributes.get("family_name");
-        String avatar = (String) attributes.get("picture");
-
-        log.info("Google Login - Email: {}, Name: {}, First Name: {}, Last Name: {}, Avatar: {}",
-                email, name, firstName, lastName, avatar);
-    }
-
-    private void githubLogin(Map<String,Object> attributes) {
-        String username = (String) attributes.get("login");
-        String avatar = (String) attributes.get("avatar_url");
-        String email = (String) attributes.get("email");
-        String address = (String) attributes.get("location");
-        String name = (String) attributes.get("name");
-        log.info("GitHub Login - Username: {}, Name: {}, Email: {}, Address: {}, Avatar: {}",
-                username, name, email, address, avatar);
-    }
-
-    private void keycloakLogin(Map<String,Object> attributes) {
         String username = (String) attributes.get("preferred_username");
         String email = (String) attributes.get("email");
         String firstName = (String) attributes.get("given_name");
         String lastName = (String) attributes.get("family_name");
 
-        log.info("Keycloak Login - Username: {}, Email: {}, First Name: {}, Last Name: {}",
-                username, email, firstName, lastName);
+        Optional<Users> userOpt = userRepository.findByEmail(email);
+        Users user = null;
+        if (userOpt.isPresent()) {
+            user = userOpt.get();
+        } else {
+            user = Users.builder()
+                    .username(username)
+                    .email(email)
+                    .fullName(firstName + " " + lastName)
+                    .build();
+            userRepository.save(user);
+        }
+        String jwtToken = jwtService.generateAccessToken(user);
+        Cookie cookie = new Cookie("JWT_TOKEN", jwtToken);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(24 * 60 * 60);
+        response.addCookie(cookie);
+
+
+        super.onAuthenticationSuccess(request, response, authentication);
     }
+
 
 }
