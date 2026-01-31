@@ -7,6 +7,7 @@ import com.tetgift.dto.request.ResetPasswordRequest;
 import com.tetgift.dto.response.LoginResponse;
 import com.tetgift.enums.TokenType;
 import com.tetgift.exception.InvalidDataException;
+import com.tetgift.exception.UnauthorizedException;
 import com.tetgift.exception.UserNotFoundException;
 import com.tetgift.model.Users;
 import com.tetgift.model.redismodel.RefreshToken;
@@ -20,6 +21,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -38,15 +40,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public LoginResponse login(LoginRequest request) {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getUsernameOrEmail(),
+                            request.getPassword()
+                    )
+            );
+        } catch (BadCredentialsException ex) {
+            throw new UnauthorizedException("Invalid username or password");
+        }
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getUsernameOrEmail(),
-                        request.getPassword()
-                )
-        );
-
-        var user = userRepository.findByUsername(request.getUsernameOrEmail()).orElseThrow(() -> new UserNotFoundException("user.not.found"));
+        var user = userRepository.findByUsername(request.getUsernameOrEmail()).orElseThrow(() -> new UserNotFoundException("User not found"));
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
         tokenService.saveRefreshToken(RefreshToken.builder()
@@ -86,9 +91,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public String forgotPassword(String email) {
-        Users user = userRepository.findByEmail(email).orElseThrow(() -> new UserNotFoundException("user.not.found"));
+        Users user = userRepository.findByEmail(email).orElseThrow(() -> new UserNotFoundException("User not found"));
         if(!user.isEnabled()) {
-            throw new InvalidDataException("user.account.not.activated");
+            throw new InvalidDataException("User is not enabled");
         }
 
         String resetToken = jwtService.generateResetPasswordToken(user);
@@ -107,25 +112,28 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         
         final String username = jwtService.extractUsername(request.getToken(), TokenType.RESET_PASSWORD);
         Users user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("user.not.found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
         
         if (!jwtService.isTokenValid(request.getToken(), user, TokenType.RESET_PASSWORD)) {
-            throw new InvalidDataException("invalid.or.expired.reset.password.token");
+            throw new InvalidDataException("Invalid or expired reset token");
         }
         if(!request.getNewPassword().equals(request.getConfirmPassword())) {
-            throw new InvalidDataException("new.password.confirm.password.not.match");
+            throw new InvalidDataException("New password and confirm password do not match");
         }
         
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
         
         log.info("Password reset successful for user: {}", username);
-        return "password.reset.success";
+        return "Password reset successful";
     }
 
     @Override
     public String changePassword(ChangePasswordRequest request) {
         Users user = utils.getCurrentUser();
+        if(user == null) {
+            throw new UnauthorizedException("User not authenticated");
+        }
         if(!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
             throw new InvalidDataException("Old password is incorrect");
         }
@@ -148,7 +156,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private Users getUserFromRefreshToken(String refreshToken) {
         String username = jwtService.extractUsername(refreshToken, TokenType.REFRESH);
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("user.not.found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
     }
 
     private void validateRefreshToken(String refreshToken, Users user) {
