@@ -99,12 +99,4 @@ jwt:
 app:
   frontend-url: http://localhost:3000
 
-logging:
-  level:
-    root: INFO
-    com.tetgift: DEBUG
-    com.tetgift.component: TRACE
-    org.springframework.security: DEBUG
-    org.springframework.security.oauth2: DEBUG
-    org.springframework.security.web: DEBUG
 

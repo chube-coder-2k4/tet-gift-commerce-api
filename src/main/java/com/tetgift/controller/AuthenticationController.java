@@ -57,18 +57,18 @@ public class AuthenticationController {
         ));
     }
 
-    @Operation(summary = "User logout", description = "Invalidate refresh token and logout user")
-    @SecurityRequirement(name = "bearerAuth")
-    @PostMapping("/logout")
-    public ResponseEntity<ResponseData<String>> logout(
-            @Parameter(description = "HTTP request containing x-refresh-token header", hidden = true)
-            HttpServletRequest request) {
-        return ResponseEntity.ok(new ResponseData<>(
-                HttpStatus.OK.value(),
-                "Logout successful",
-                authenticationService.logout(request)
-        ));
-    }
+//    @Operation(summary = "User logout", description = "Invalidate refresh token and logout user")
+//    @SecurityRequirement(name = "bearerAuth")
+//    @PostMapping("/logout")
+//    public ResponseEntity<ResponseData<String>> logout(
+//            @Parameter(description = "HTTP request containing x-refresh-token header", hidden = true)
+//            HttpServletRequest request) {
+//        return ResponseEntity.ok(new ResponseData<>(
+//                HttpStatus.OK.value(),
+//                "Logout successful",
+//                authenticationService.logout(request)
+//        ));
+//    }
 
     @Operation(summary = "Forgot password", description = "Send password reset token to user's email")
     @PostMapping("/forgot-password")
