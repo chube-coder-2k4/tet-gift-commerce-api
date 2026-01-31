@@ -21,7 +21,7 @@ services:
     networks:
       - commerce-network
     ports:
-      - "5432:5432"
+      - "55432:5432"
 
   redis:
     image: redis:7-alpine
