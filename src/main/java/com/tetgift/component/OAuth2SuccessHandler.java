@@ -24,7 +24,6 @@ import java.util.Set;
 @RequiredArgsConstructor
 @Slf4j
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
-
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final RoleRepository roleRepository;
@@ -50,9 +49,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             Thread.sleep(100);
 
             Users user = userRepository.findByEmail(email)
-                    .orElseGet(() -> {
-                        return createUserFromOAuth2(oAuth2User);
-                    });
+                    .orElseGet(() -> createUserFromOAuth2(oAuth2User));
+
 
             String jwtToken = jwtService.generateAccessToken(user);
 
@@ -88,7 +86,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         Users newUser = Users.builder()
                 .email(email)
                 .fullName(fullName)
-                .username(email.split("@")[0])
+                .username(email != null ? email.split("@")[0] : "unknown")
                 .roles(role)
                 .build();
         return userRepository.save(newUser);
