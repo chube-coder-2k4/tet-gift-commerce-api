@@ -22,7 +22,6 @@ import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     private final UserRepository userRepository;
     private final JwtService jwtService;
