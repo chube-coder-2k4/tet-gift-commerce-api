@@ -46,12 +46,12 @@ spring:
             scope: user:email,read:email
             authorization-grant-type: authorization_code
             redirect-uri: "{baseUrl}/login/oauth2/code/github"
-          keycloak:
-            client-id: ${KEYCLOAK_CLIENT_ID}
-            client-secret: ${KEYCLOAK_CLIENT_SECRET}
-            scope: openid,profile,email
-            authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/keycloak"
+#          keycloak:
+#            client-id: ${KEYCLOAK_CLIENT_ID}
+#            client-secret: ${KEYCLOAK_CLIENT_SECRET}
+#            scope: openid,profile,email
+#            authorization-grant-type: authorization_code
+#            redirect-uri: "{baseUrl}/login/oauth2/code/keycloak"
         provider:
           google:
             issuer-uri: https://accounts.google.com
@@ -60,8 +60,8 @@ spring:
             token-uri: https://github.com/login/oauth/access_token
             user-info-uri: https://api.github.com/user
             user-name-attribute: login
-          keycloak:
-            issuer-uri: ${KEYCLOAK_ISSUER_URI}
+#          keycloak:
+#            issuer-uri: ${KEYCLOAK_ISSUER_URI}
 
 
 management:
@@ -93,4 +93,10 @@ jwt:
   expiryDay: ${REFRESH_TOKEN_EXPIRATION_DAYS}
   refreshKey: ${JWT_REFRESH_SECRET}
   resetKey: ${JWT_RESET_PASSWORD_SECRET}
+
+---
+
+app:
+  frontend-url: http://localhost:3000
+
 
