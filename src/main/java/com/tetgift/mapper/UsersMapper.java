@@ -11,4 +11,5 @@ import org.mapstruct.Mapper;
 public interface UsersMapper {
     Users toEntity(UserRequest user);
     UserResponse toResponse(Users user);
+    UserResponse toUpdateResponse(Users user);
 }

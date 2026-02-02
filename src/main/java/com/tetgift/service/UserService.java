@@ -3,14 +3,16 @@ package com.tetgift.service;
 import com.tetgift.dto.request.UserRequest;
 import com.tetgift.dto.request.UserUpdateRequest;
 import com.tetgift.dto.response.PageResponse;
+import com.tetgift.dto.response.UserResponse;
 import com.tetgift.model.Users;
 import jakarta.mail.MessagingException;
 
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 
 public interface UserService {
 
-    Users findByUsername(String username);
+    UserResponse findByUsername(String username);
 
     Long saveUser(UserRequest request);
 
@@ -18,7 +20,8 @@ public interface UserService {
 
     void deleteUser(Long userId);
 
-    Users findById(Long userId);
+    UserResponse findById(Long userId);
 
-    PageResponse<Users> getAllUsers(int page, int size, String sortBy, String sortDir);
+    PageResponse<UserResponse> getUsers(int page, int size, String sortBy, String sortDir);
+
 }
