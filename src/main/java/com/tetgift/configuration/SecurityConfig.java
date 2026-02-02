@@ -34,7 +34,7 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/api/v1/users/register",
+            "/api/v1/user/register",
             "/api/v1/payments/vnpay-callback",
             "/payment-success",
             "/payment-failed",
