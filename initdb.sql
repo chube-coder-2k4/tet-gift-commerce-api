@@ -1,1 +1,1 @@
-CREATE DATABASE keycloak;
+CREATE DATABASE keycloak;CREATE DATABASE tetshopping;
