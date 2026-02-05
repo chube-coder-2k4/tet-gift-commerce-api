@@ -45,13 +45,13 @@ spring:
             client-secret: ${GOOGLE_CLIENT_SECRET}
             scope: openid,profile,email
             authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/google"
+            redirect-uri: "https://api.shophuypro.store/login/oauth2/code/google"
           github:
             client-id: ${GITHUB_CLIENT_ID}
             client-secret: ${GITHUB_CLIENT_SECRET}
             scope: user:email,read:email
             authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/github"
+            redirect-uri: "https://api.shophuypro.store/login/oauth2/code/github"
         provider:
           google:
             issuer-uri: https://accounts.google.com
