@@ -27,7 +27,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final JwtService jwtService;
     private final RoleRepository roleRepository;
 
-    @Value("${app.frontend-url:http://localhost:3000}")
+    @Value("${app.frontend-url:https://shophuypro.store}")
     private String frontendUrl;
 
     @Override
