@@ -1,3 +1,4 @@
+
 spring:
   config:
     activate:
@@ -5,9 +6,9 @@ spring:
   application:
     name: commerce-gateway-development
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/${POSTGRES_DB}}
-    username: ${SPRING_DATASOURCE_USERNAME:${POSTGRES_USER}}
-    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD}}
+    url: ${DATASOURCE_URL}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -18,8 +19,8 @@ spring:
         format_sql: true
   data:
     redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   mail:
     host: ${MAIL_HOST}
     port: ${MAIL_PORT}
@@ -73,7 +74,8 @@ management:
       base-path: /api/v1/actuator
       exposure:
         include: "health, info"
-
+server:
+  port: 8086
 ---
 
 cloudinary:
