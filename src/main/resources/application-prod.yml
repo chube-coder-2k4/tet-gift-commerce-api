@@ -17,9 +17,7 @@ spring:
         format_sql: true
   data:
     redis:
-      host: ${REDIS_HOST:redis.railway.internal}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+      url: ${REDIS_URL}
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
