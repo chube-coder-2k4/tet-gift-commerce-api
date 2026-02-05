@@ -5,7 +5,9 @@ spring:
   application:
     name: commerce-gateway-production
   datasource:
-    url: ${DATABASE_URL}
+    url: jdbc:postgresql://${PGHOST:postgres.railway.internal}:${PGPORT:5432}/${PGDATABASE:railway}
+    username: ${PGUSER:postgres}
+    password: ${PGPASSWORD:}
   jpa:
     hibernate:
       ddl-auto: update
@@ -15,8 +17,9 @@ spring:
         format_sql: true
   data:
     redis:
-      url: ${REDIS_URL}
-      timeout: 60000
+      host: ${REDIS_HOST:redis.railway.internal}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
@@ -83,3 +86,8 @@ jwt:
   expiryDay: ${REFRESH_TOKEN_EXPIRATION_DAYS}
   refreshKey: ${JWT_REFRESH_SECRET}
   resetKey: ${JWT_RESET_PASSWORD_SECRET}
+
+logging:
+  level:
+    root: INFO
+    com.tetgift: DEBUG
