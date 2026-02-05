@@ -63,6 +63,10 @@ spring:
 
 ---
 
+app:
+  frontend-url: https://shophuypro.store
+
+
 cloudinary:
   cloud-name: ${CLOUDINARY_NAME}
   api-key: ${CLOUDINARY_API_KEY}
