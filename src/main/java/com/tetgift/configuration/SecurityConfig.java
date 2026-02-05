@@ -73,7 +73,7 @@ public class SecurityConfig {
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(customOAuth2UserService))
                         .successHandler(oAuth2SuccessHandler)
-                        .failureUrl("http://localhost:3000/login?error=oauth_failed"))
+                        .failureUrl("https://shophuypro.store/login?error=oauth_failed"))
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable);
