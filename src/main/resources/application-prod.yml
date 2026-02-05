@@ -60,11 +60,6 @@ spring:
 
 ---
 
-server:
-  port: 8087
-
----
-
 cloudinary:
   cloud-name: ${CLOUDINARY_NAME}
   api-key: ${CLOUDINARY_API_KEY}

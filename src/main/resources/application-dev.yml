@@ -74,9 +74,6 @@ management:
       base-path: /api/v1/actuator
       exposure:
         include: "health, info"
-server:
-  port: 8086
----
 
 cloudinary:
   cloud-name: ${CLOUDINARY_NAME}
