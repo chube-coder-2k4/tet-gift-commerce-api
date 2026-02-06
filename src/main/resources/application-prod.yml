@@ -19,7 +19,7 @@ spring:
     redis:
       host: ${REDIS_HOST:redis.railway.internal}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD}
+      password: ${REDIS_PASSWORD:}
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
