@@ -34,8 +34,8 @@ spring:
             required: true
           ssl:
             trust: smtp.gmail.com
-        debug: false
-    from: ${MAIL_FROM}
+        debug: true
+    default-encoding: UTF-8
   security:
     oauth2:
       client:
@@ -60,6 +60,11 @@ spring:
             token-uri: https://github.com/login/oauth/access_token
             user-info-uri: https://api.github.com/user
             user-name-attribute: login
+
+---
+
+mail:
+  from: ${MAIL_FROM}
 
 ---
 
