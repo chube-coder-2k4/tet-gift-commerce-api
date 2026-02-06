@@ -16,7 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Slf4j
 public class MailServiceImpl implements MailService {
     private final JavaMailSender mailSender;
-    @Value("${spring.mail.from}")
+    @Value("${mail.from}")
     private String emailFrom;
 
     @Override
