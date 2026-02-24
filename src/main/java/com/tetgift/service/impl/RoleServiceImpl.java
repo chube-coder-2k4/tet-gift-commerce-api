@@ -2,6 +2,7 @@ package com.tetgift.service.impl;
 
 import com.tetgift.dto.request.RoleRequest;
 import com.tetgift.dto.response.RoleResponse;
+import com.tetgift.exception.ResourceNotFoundException;
 import com.tetgift.model.Role;
 import com.tetgift.repository.jpa.RoleRepository;
 import com.tetgift.service.RoleService;
@@ -41,7 +42,7 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     public RoleResponse updateRole(Long id, RoleRequest role) {
-        Role existingRole = roleRepository.findById(id).orElseThrow(() -> new RuntimeException("Role not found"));
+        Role existingRole = roleRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Role not found"));
         existingRole.setName(role.getName());
         existingRole.setDescription(role.getDescription());
         Role updatedRole = roleRepository.save(existingRole);
@@ -54,12 +55,13 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     public void deleteRole(Long id) {
+        roleRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Role not found"));
         roleRepository.deleteById(id);
     }
 
     @Override
     public RoleResponse getRoleById(Long id) {
-        Role role = roleRepository.findById(id).orElseThrow(() -> new RuntimeException("Role not found"));
+        Role role = roleRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Role not found"));
         return RoleResponse.builder()
                 .id(role.getId())
                 .name(role.getName())

@@ -6,9 +6,9 @@ import com.tetgift.dto.response.LoginResponse;
 import com.tetgift.dto.response.ResponseData;
 import com.tetgift.service.AuthenticationService;
 import com.tetgift.service.OtpVerifyService;
+import com.tetgift.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,6 +34,20 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthenticationController {
     private final AuthenticationService authenticationService;
     private final OtpVerifyService otpVerifyService;
+    private final UserService userService;
+
+    @Operation(summary = "Register user", description = "Register a new user account")
+    @PostMapping("/register")
+    public ResponseEntity<ResponseData<Long>> register(@Valid @RequestBody UserRequest request) {
+        Long userId = userService.saveUser(request);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(new ResponseData<>(
+                        HttpStatus.CREATED.value(),
+                        "User registered successfully",
+                        userId
+                ));
+    }
 
     @Operation(summary = "User login", description = "Authenticate user and return access token and refresh token")
     @PostMapping("/login")

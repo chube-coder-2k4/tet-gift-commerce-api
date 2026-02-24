@@ -40,29 +40,26 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
             String email = oAuth2User.getAttribute("email");
 
-
             if (email == null || email.isEmpty()) {
                 redirectToError(request, response, "email_missing");
                 return;
             }
-            Thread.sleep(100);
 
             Users user = userRepository.findByEmail(email)
                     .orElseGet(() -> createUserFromOAuth2(oAuth2User));
-
 
             String jwtToken = jwtService.generateAccessToken(user);
 
             Cookie cookie = new Cookie("JWT_TOKEN", jwtToken);
             cookie.setHttpOnly(true);
-            cookie.setSecure(false);
+            cookie.setSecure(true);
             cookie.setPath("/");
             cookie.setMaxAge(24 * 60 * 60);
             response.addCookie(cookie);
 
+            // Token is delivered via HttpOnly cookie - do NOT expose it in URL
             String targetUrl = UriComponentsBuilder
                     .fromUriString(frontendUrl + "/oauth2/redirect")
-                    .queryParam("token", jwtToken)
                     .queryParam("email", email)
                     .build()
                     .toUriString();

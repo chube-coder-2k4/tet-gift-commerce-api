@@ -53,4 +53,16 @@ public class MailServiceImpl implements MailService {
         String body = String.format("Your OTP is: %s (valid for 5 minutes)", otp);
         return sendMail(email, subject, body, null);
     }
+
+    @Override
+    public String sendResetPasswordMail(String email, String resetLink) {
+        String subject = "Reset Your Password";
+        String body = String.format(
+                "<p>You requested a password reset. Click the link below to reset your password:</p>" +
+                "<p><a href=\"%s\">Reset Password</a></p>" +
+                "<p>This link is valid for 10 minutes. If you did not request this, please ignore this email.</p>",
+                resetLink
+        );
+        return sendMail(email, subject, body, null);
+    }
 }

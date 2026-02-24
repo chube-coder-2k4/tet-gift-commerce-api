@@ -15,7 +15,6 @@ import com.tetgift.service.MailService;
 import com.tetgift.service.OtpVerifyService;
 import com.tetgift.service.UserService;
 import com.tetgift.util.AuthenticationUtils;
-import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,9 +22,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -78,7 +75,7 @@ public class UserServiceImpl implements UserService {
                 throw new InvalidDataException("Username already exists");
             }
         }
-        usersMapper.toUpdateResponse(user);
+        usersMapper.updateEntity(request, user);
         user.setUpdatedBy(authenticationUtils.getCurrentUserId());
         Users updatedUser = userRepository.save(user);
         return updatedUser.getId();
@@ -98,8 +95,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public PageResponse<UserResponse> getUsers(int page, int size, String sortBy, String sortDir) {
-        Sort sort = Sort.by(Sort.Direction.DESC, sortDir);
-        Pageable pageable = PageRequest.of(page -1, size, sort);
+        Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
+        Pageable pageable = PageRequest.of(page - 1, size, sort);
         var userPage = userRepository.findAll(pageable);
 
         return PageResponse.<UserResponse>builder()

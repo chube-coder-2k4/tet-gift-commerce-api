@@ -28,32 +28,32 @@ public class RoleController {
     public ResponseEntity<ResponseData<RoleResponse>> createRole(@RequestBody @Valid RoleRequest roleRequest) {
         return ResponseEntity
                 .status(HttpStatus.CREATED.value())
-                .body(new ResponseData<RoleResponse>(
+                .body(new ResponseData<>(
                         HttpStatus.CREATED.value(),
                         "Role created successfully",
                         roleService.createRole(roleRequest)
-                        ));
+                ));
     }
 
-    @PutMapping
+    @PutMapping("/{id}")
     @Operation(summary = "Update an existing role", description = "Update the details of an existing role")
-    public ResponseEntity<ResponseData<RoleResponse>> updateRole(@RequestParam Long id, @RequestBody @Valid RoleRequest roleRequest) {
+    public ResponseEntity<ResponseData<RoleResponse>> updateRole(@PathVariable Long id, @RequestBody @Valid RoleRequest roleRequest) {
         return ResponseEntity
                 .status(HttpStatus.OK.value())
-                .body(new ResponseData<RoleResponse>(
+                .body(new ResponseData<>(
                         HttpStatus.OK.value(),
                         "Role updated successfully",
                         roleService.updateRole(id, roleRequest)
                 ));
     }
 
-    @DeleteMapping
+    @DeleteMapping("/{id}")
     @Operation(summary = "Delete a role", description = "Delete a role by its ID")
-    public ResponseEntity<ResponseData<Void>> deleteRole(@RequestParam Long id) {
+    public ResponseEntity<ResponseData<Void>> deleteRole(@PathVariable Long id) {
         roleService.deleteRole(id);
         return ResponseEntity
                 .status(HttpStatus.OK.value())
-                .body(new ResponseData<Void>(
+                .body(new ResponseData<>(
                         HttpStatus.OK.value(),
                         "Role deleted successfully",
                         null
@@ -65,7 +65,7 @@ public class RoleController {
     public ResponseEntity<ResponseData<RoleResponse>> getRoleById(@PathVariable Long id) {
         return ResponseEntity
                 .status(HttpStatus.OK.value())
-                .body(new ResponseData<RoleResponse>(
+                .body(new ResponseData<>(
                         HttpStatus.OK.value(),
                         "Role retrieved successfully",
                         roleService.getRoleById(id)
@@ -77,7 +77,7 @@ public class RoleController {
     public ResponseEntity<ResponseData<Iterable<RoleResponse>>> getAllRoles() {
         return ResponseEntity
                 .status(HttpStatus.OK.value())
-                .body(new ResponseData<Iterable<RoleResponse>>(
+                .body(new ResponseData<>(
                         HttpStatus.OK.value(),
                         "Roles retrieved successfully",
                         roleService.getAllRoles()

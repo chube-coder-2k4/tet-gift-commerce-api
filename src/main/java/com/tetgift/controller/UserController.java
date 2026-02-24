@@ -1,8 +1,6 @@
 package com.tetgift.controller;
 
-import com.tetgift.dto.request.UserRequest;
 import com.tetgift.dto.request.UserUpdateRequest;
-import com.tetgift.dto.response.ApiResponse;
 import com.tetgift.dto.response.PageResponse;
 import com.tetgift.dto.response.ResponseData;
 import com.tetgift.dto.response.UserResponse;
@@ -26,18 +24,6 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
     private final UserService userService;
 
-    @PostMapping("/register")
-    @Operation(summary = "Register User", description = "Register a new user in the system")
-    public ResponseEntity<ResponseData<Long>> registerUser(@RequestBody @Valid UserRequest request) {
-        Long userId = userService.saveUser(request);
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(new ResponseData<>(
-                        HttpStatus.CREATED.value(),
-                        "User registered successfully",
-                        userId
-                ));
-    }
 
     @GetMapping
     @Operation(summary = "Get All Users", description = "Retrieve a paginated list of all users")

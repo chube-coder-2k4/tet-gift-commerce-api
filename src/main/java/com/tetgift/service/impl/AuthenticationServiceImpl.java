@@ -14,12 +14,14 @@ import com.tetgift.model.redismodel.RefreshToken;
 import com.tetgift.repository.jpa.UserRepository;
 import com.tetgift.service.AuthenticationService;
 import com.tetgift.service.JwtService;
+import com.tetgift.service.MailService;
 import com.tetgift.service.RefreshTokenService;
 import com.tetgift.util.AuthenticationUtils;
 import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -36,6 +38,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final RefreshTokenService tokenService;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationUtils utils;
+    private final MailService mailService;
+
+    @Value("${app.frontend-url:https://shophuypro.store}")
+    private String frontendUrl;
 
 
     @Override
@@ -51,7 +57,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new UnauthorizedException("Invalid username or password");
         }
 
-        var user = userRepository.findByUsername(request.getUsernameOrEmail()).orElseThrow(() -> new UserNotFoundException("User not found"));
+        // Support login by both username and email
+        var user = userRepository.findByUsername(request.getUsernameOrEmail())
+                .or(() -> userRepository.findByEmail(request.getUsernameOrEmail()))
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
         tokenService.saveRefreshToken(RefreshToken.builder()
@@ -97,17 +106,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
 
         String resetToken = jwtService.generateResetPasswordToken(user);
-        
-        log.info("Password reset token generated for user: {}", email);
-        log.info("Reset token: {}", resetToken);
+        String resetLink = frontendUrl + "/reset-password?token=" + resetToken;
+        mailService.sendResetPasswordMail(email, resetLink);
+        log.info("Password reset email sent to: {}", email);
 
-        return resetToken;
+        return "If the email is registered, a password reset link has been sent";
     }
 
     @Override
     public String resetPassword(ResetPasswordRequest request) {
         if(!request.getNewPassword().equals(request.getConfirmPassword())) {
-            throw new InvalidDataException("new.password.confirm.password.not.match");
+            throw new InvalidDataException("New password and confirm password do not match");
         }
         
         final String username = jwtService.extractUsername(request.getToken(), TokenType.RESET_PASSWORD);
@@ -117,10 +126,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         if (!jwtService.isTokenValid(request.getToken(), user, TokenType.RESET_PASSWORD)) {
             throw new InvalidDataException("Invalid or expired reset token");
         }
-        if(!request.getNewPassword().equals(request.getConfirmPassword())) {
-            throw new InvalidDataException("New password and confirm password do not match");
-        }
-        
+
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
         
@@ -156,6 +162,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private Users getUserFromRefreshToken(String refreshToken) {
         String username = jwtService.extractUsername(refreshToken, TokenType.REFRESH);
         return userRepository.findByUsername(username)
+                .or(() -> userRepository.findByEmail(username))
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
     }
 
