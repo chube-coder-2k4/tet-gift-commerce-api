@@ -33,6 +33,7 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/api/v1/user/register",
+            "/api/v1/products/**", // For testing purpose
             "/api/v1/payments/vnpay-callback",
             "/payment-success",
             "/payment-failed",
