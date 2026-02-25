@@ -111,4 +111,28 @@ public class GlobalHandlerException {
 
         return errorResponse;
     }
+
+    @ExceptionHandler(ProductNotFoundException.class)
+    @ResponseStatus(NOT_FOUND)
+    public ErrorResponse handleProductNotFoundException(ProductNotFoundException e, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(LocalDateTime.now());
+        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
+        errorResponse.setStatus(NOT_FOUND.value());
+        errorResponse.setError("Product Not Found");
+        errorResponse.setMessage(e.getMessage());
+        return errorResponse;
+    }
+
+    @ExceptionHandler(BadgeNotFoundException.class)
+    @ResponseStatus(NOT_FOUND)
+    public ErrorResponse handleBadgeNotFoundException(BadgeNotFoundException e, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(LocalDateTime.now());
+        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
+        errorResponse.setStatus(NOT_FOUND.value());
+        errorResponse.setError("Badge Not Found");
+        errorResponse.setMessage(e.getMessage());
+        return errorResponse;
+    }
 }
