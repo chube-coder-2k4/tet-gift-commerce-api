@@ -21,6 +21,7 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
   mail:
     host: ${MAIL_HOST}
     port: ${MAIL_PORT}
@@ -97,5 +98,8 @@ jwt:
 
 app:
   frontend-url: http://localhost:3000
+
+mail:
+  from: ${MAIL_FROM}
 
 
