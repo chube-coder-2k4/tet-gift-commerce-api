@@ -135,4 +135,16 @@ public class GlobalHandlerException {
         errorResponse.setMessage(e.getMessage());
         return errorResponse;
     }
+
+    @ExceptionHandler(CategoryNotFoundException.class)
+    @ResponseStatus(NOT_FOUND)
+    public ErrorResponse handleCategoryNotFoundException(CategoryNotFoundException e, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(LocalDateTime.now());
+        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
+        errorResponse.setStatus(NOT_FOUND.value());
+        errorResponse.setError("Category Not Found");
+        errorResponse.setMessage(e.getMessage());
+        return errorResponse;
+    }
 }

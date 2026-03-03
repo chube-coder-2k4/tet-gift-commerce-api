@@ -1,5 +1,6 @@
 package com.tetgift.model.entity;
 
+import com.tetgift.model.Category;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Data;
@@ -64,5 +65,13 @@ public class ProductEntity {
         inverseJoinColumns = @JoinColumn(name = "badge_id")
     )
     private Set<ProductBadgeEntity> productBadges;
+
+    @ManyToMany
+    @JoinTable(
+        name = "product_category_map",
+        joinColumns = @JoinColumn(name = "product_id"),
+        inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    private Set<Category> categories;
 
 }
