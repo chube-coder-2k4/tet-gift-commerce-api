@@ -4,11 +4,15 @@ import com.tetgift.dto.request.ProductRequest;
 import com.tetgift.dto.response.PageResponse;
 import com.tetgift.dto.response.ProductResponse;
 import com.tetgift.exception.BadgeNotFoundException;
+import com.tetgift.exception.CategoryNotFoundException;
 import com.tetgift.exception.ProductNotFoundException;
 import com.tetgift.mapper.ProductMapper;
+import com.tetgift.model.Category;
 import com.tetgift.model.entity.*;
+import com.tetgift.repository.jpa.CategoryRepository;
 import com.tetgift.repository.jpa.ProductBadgeRepository;
 import com.tetgift.repository.jpa.ProductRepository;
+import com.tetgift.service.CategoryService;
 import com.tetgift.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -31,10 +35,11 @@ public class ProductServiceImp implements ProductService {
     private final ProductRepository productRepository;
     private final ProductBadgeRepository productBadgeRepository;
     private final ProductMapper productMapper;
+    private final CategoryRepository categoryRepository;
 
     @Override
     public ProductResponse findProductById(Long id) {
-        ProductEntity productEntity = productRepository.findByStatusAndId(ProductStatus.ACTIVE,id)
+        ProductEntity productEntity = productRepository.findByStatusAndId(ProductStatus.ACTIVE, id)
                 .orElseThrow(() -> new ProductNotFoundException("Product with " + id + " not found"));
         return productMapper.toResponse(productEntity);
     }
@@ -72,7 +77,8 @@ public class ProductServiceImp implements ProductService {
         }
 
 
-            productEntity.setProductBadges(resolveBadges(productRequest.getBadgeIds()));
+        productEntity.setProductBadges(resolveBadges(productRequest.getBadgeIds()));
+        productEntity.setCategories(resolveCategories(productRequest.getCategoryIds()));
 
         ProductEntity savedProduct = productRepository.save(productEntity);
         return savedProduct.getId();
@@ -118,6 +124,7 @@ public class ProductServiceImp implements ProductService {
 
 
         productEntity.setProductBadges(resolveBadges(productRequest.getBadgeIds()));
+        productEntity.setCategories(resolveCategories(productRequest.getCategoryIds()));
         ProductEntity updatedProduct = productRepository.save(productEntity);
 
         return updatedProduct.getId();
@@ -127,7 +134,7 @@ public class ProductServiceImp implements ProductService {
     public void deleteProduct(Long id) {
         ProductEntity productEntity = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product with " + id + " not found"));
-        if(ProductStatus.DELETED.equals(productEntity.getStatus())){
+        if (ProductStatus.DELETED.equals(productEntity.getStatus())) {
             throw new ProductNotFoundException("Product with " + id + " Is already deleted");
         }
         productEntity.setStatus(ProductStatus.DELETED);
@@ -140,7 +147,7 @@ public class ProductServiceImp implements ProductService {
                 ? Sort.by(sortBy).descending()
                 : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
-        Page<ProductEntity> products = productRepository.findByStatus(ProductStatus.ACTIVE,pageable);
+        Page<ProductEntity> products = productRepository.findByStatus(ProductStatus.ACTIVE, pageable);
         List<ProductResponse> productResponses = productMapper.toResponseList(products.getContent());
 
         return PageResponse.<ProductResponse>builder()
@@ -152,7 +159,7 @@ public class ProductServiceImp implements ProductService {
                 .build();
     }
 
-    public Set<ProductBadgeEntity> resolveBadges(Set<Long> badgeIds) {
+    private Set<ProductBadgeEntity> resolveBadges(Set<Long> badgeIds) {
         if (badgeIds == null || badgeIds.isEmpty()) {
             return Set.of();
         }
@@ -173,10 +180,36 @@ public class ProductServiceImp implements ProductService {
                     .filter(id -> !foundIds.contains(id))
                     .toList();
 
+
             throw new BadgeNotFoundException("Badges not found for IDs: " + missingIds);
         }
 
         return new HashSet<>(badges);
     }
 
+    private Set<Category> resolveCategories(Set<Long> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return Set.of();
+        }
+
+        // Remove duplicates early
+        Set<Long> uniqueIds = new HashSet<>(categoryIds);
+
+        List<Category> categories =
+                categoryRepository.findAllById(uniqueIds);
+
+        if (categories.size() != uniqueIds.size()) {
+
+            Set<Long> foundIds = categories.stream()
+                    .map(Category::getId)
+                    .collect(Collectors.toSet());
+
+            List<Long> missingIds = uniqueIds.stream()
+                    .filter(id -> !foundIds.contains(id))
+                    .toList();
+            throw new CategoryNotFoundException("Categories not found for IDs: " + missingIds);
+        }
+        return new HashSet<>(categories);
+
+    }
 }

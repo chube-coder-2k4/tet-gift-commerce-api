@@ -22,4 +22,5 @@ public class ProductRequest {
     private ProductInventoryRequest inventory;
     private List<ProductImageRequest> images;
     private Set<Long> badgeIds;
+    private Set<Long> categoryIds;
 }
