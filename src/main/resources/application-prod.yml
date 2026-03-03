@@ -5,9 +5,9 @@ spring:
   application:
     name: commerce-gateway-production
   datasource:
-    url: jdbc:postgresql://${PGHOST:postgres.railway.internal}:${PGPORT:5432}/${PGDATABASE:railway}
+    url: jdbc:postgresql://localhost:55432/tetshopping
     username: ${PGUSER:postgres}
-    password: ${PGPASSWORD:}
+    password: ${PGPASSWORD:12345}
   jpa:
     hibernate:
       ddl-auto: update
