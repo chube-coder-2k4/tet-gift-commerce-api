@@ -1,5 +1,6 @@
 package com.tetgift.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,5 +17,6 @@ public class AddressRequest {
     @NotBlank(message = "Address detail is required")
     private String addressDetail;
 
+    @JsonProperty("isDefault")
     private boolean isDefault = false;
 }

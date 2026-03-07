@@ -1,5 +1,6 @@
 package com.tetgift.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
 import lombok.Data;
 
@@ -18,7 +19,12 @@ public class ProductResponse {
     private String categoryName;
     private Long categoryId;
     private boolean isActive;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate manufactureDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate expDate;
+
     private List<ProductImageResponse> images;
 }
