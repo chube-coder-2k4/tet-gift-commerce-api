@@ -5,6 +5,7 @@ import lombok.Data;
 @Data
 public class ProductImageRequest {
     private String imageUrl;
-    private Boolean isThumbnail;
-    private Integer sortOrder;
+    private String imageType;
+    private String publicId;
+    private boolean isPrimary;
 }

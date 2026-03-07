@@ -1,6 +1,5 @@
 package com.tetgift.model;
 
-
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -15,20 +14,15 @@ public class Address extends BaseEntity<Long> {
     @Column(name = "receiver_name", nullable = false)
     private String receiverName;
 
-    @Column(name = "phone_number", nullable = false)
-    private String phoneNumber;
+    @Column(name = "phone", nullable = false)
+    private String phone;
 
-    @Column(name = "street_address", nullable = false)
-    private String streetAddress;
+    @Column(name = "address_detail", nullable = false, length = 500)
+    private String addressDetail;
 
-    @Column(name = "ward", nullable = false)
-    private String ward;
-
-    @Column(name = "district", nullable = false)
-    private String district;
-
-    @Column(name = "province", nullable = false)
-    private String province;
+    @Column(name = "is_default")
+    @Builder.Default
+    private boolean isDefault = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

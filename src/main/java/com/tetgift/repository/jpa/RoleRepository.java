@@ -4,9 +4,9 @@ import com.tetgift.model.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.Set;
+import java.util.Optional;
 
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Long> {
-    Set<Role> findByName(String name);
+    Optional<Role> findByName(String name);
 }
