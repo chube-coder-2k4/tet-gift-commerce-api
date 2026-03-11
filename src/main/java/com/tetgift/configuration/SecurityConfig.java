@@ -14,6 +14,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -31,6 +32,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
         private final PreFilter preFilter;
@@ -45,6 +47,8 @@ public class SecurityConfig {
                         "/api/v1/auth/**",
                         "/api/v1/user/register",
                         "/api/v1/payments/vnpay-callback",
+                        "/api/v1/chatbot/chat",
+                        "/api/v1/chatbot/history/**",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
                         "/swagger-ui.html",
@@ -83,13 +87,12 @@ public class SecurityConfig {
                 return http.build();
         }
 
-        @Bean
-        public AuthenticationProvider authenticationProvider() {
-                DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-                provider.setUserDetailsService(userDetailsService);
-                provider.setPasswordEncoder(passwordEncoder);
-                return provider;
-        }
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder);
+        return provider;
+    }
 
         @Bean
         public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
