@@ -1,7 +1,6 @@
 package com.tetgift.exception;
 
 import jakarta.validation.ConstraintViolationException;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -10,15 +9,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 import static org.springframework.http.HttpStatus.*;
 
 @RestControllerAdvice
 public class GlobalHandlerException {
 
-    @ExceptionHandler({ConstraintViolationException.class,
-            MissingServletRequestParameterException.class, MethodArgumentNotValidException.class})
+    @ExceptionHandler({ ConstraintViolationException.class,
+            MissingServletRequestParameterException.class, MethodArgumentNotValidException.class })
     @ResponseStatus(BAD_REQUEST)
     public ErrorResponse handleValidationException(Exception e, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
@@ -56,7 +54,6 @@ public class GlobalHandlerException {
         errorResponse.setStatus(NOT_FOUND.value());
         errorResponse.setError(NOT_FOUND.getReasonPhrase());
         errorResponse.setMessage(e.getMessage());
-
         return errorResponse;
     }
 
@@ -69,7 +66,42 @@ public class GlobalHandlerException {
         errorResponse.setStatus(CONFLICT.value());
         errorResponse.setError(CONFLICT.getReasonPhrase());
         errorResponse.setMessage(e.getMessage());
+        return errorResponse;
+    }
 
+    @ExceptionHandler(ForBiddenException.class)
+    @ResponseStatus(FORBIDDEN)
+    public ErrorResponse handleAccessDeniedException(ForBiddenException e, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(LocalDateTime.now());
+        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
+        errorResponse.setStatus(FORBIDDEN.value());
+        errorResponse.setError(FORBIDDEN.getReasonPhrase());
+        errorResponse.setMessage(e.getMessage());
+        return errorResponse;
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    @ResponseStatus(UNAUTHORIZED)
+    public ErrorResponse handleUnauthorizedException(UnauthorizedException e, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(LocalDateTime.now());
+        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
+        errorResponse.setStatus(UNAUTHORIZED.value());
+        errorResponse.setError(UNAUTHORIZED.getReasonPhrase());
+        errorResponse.setMessage(e.getMessage());
+        return errorResponse;
+    }
+
+    @ExceptionHandler({ ProductNotFoundException.class, CategoryNotFoundException.class, UserNotFoundException.class })
+    @ResponseStatus(NOT_FOUND)
+    public ErrorResponse handleNotFoundException(RuntimeException e, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(LocalDateTime.now());
+        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
+        errorResponse.setStatus(NOT_FOUND.value());
+        errorResponse.setError("Not Found");
+        errorResponse.setMessage(e.getMessage());
         return errorResponse;
     }
 
@@ -81,69 +113,6 @@ public class GlobalHandlerException {
         errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
         errorResponse.setStatus(INTERNAL_SERVER_ERROR.value());
         errorResponse.setError(INTERNAL_SERVER_ERROR.getReasonPhrase());
-        errorResponse.setMessage(e.getMessage());
-
-        return errorResponse;
-    }
-
-    @ExceptionHandler(ForBiddenException.class)
-    @ResponseStatus(FORBIDDEN)
-    public ErrorResponse handleAccessDeniedException(Exception e, WebRequest request) {
-        ErrorResponse errorResponse = new ErrorResponse();
-        errorResponse.setTimestamp(LocalDateTime.now());
-        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
-        errorResponse.setStatus(FORBIDDEN.value());
-        errorResponse.setError(FORBIDDEN.getReasonPhrase());
-        errorResponse.setMessage(e.getMessage());
-
-        return errorResponse;
-    }
-
-    @ExceptionHandler(UnauthorizedException.class)
-    @ResponseStatus(UNAUTHORIZED)
-    public ErrorResponse handleUnauthorizedException(Exception e, WebRequest request) {
-        ErrorResponse errorResponse = new ErrorResponse();
-        errorResponse.setTimestamp(LocalDateTime.now());
-        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
-        errorResponse.setStatus(UNAUTHORIZED.value());
-        errorResponse.setError(UNAUTHORIZED.getReasonPhrase());
-        errorResponse.setMessage(e.getMessage());
-
-        return errorResponse;
-    }
-
-    @ExceptionHandler(ProductNotFoundException.class)
-    @ResponseStatus(NOT_FOUND)
-    public ErrorResponse handleProductNotFoundException(ProductNotFoundException e, WebRequest request) {
-        ErrorResponse errorResponse = new ErrorResponse();
-        errorResponse.setTimestamp(LocalDateTime.now());
-        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
-        errorResponse.setStatus(NOT_FOUND.value());
-        errorResponse.setError("Product Not Found");
-        errorResponse.setMessage(e.getMessage());
-        return errorResponse;
-    }
-
-    @ExceptionHandler(BadgeNotFoundException.class)
-    @ResponseStatus(NOT_FOUND)
-    public ErrorResponse handleBadgeNotFoundException(BadgeNotFoundException e, WebRequest request) {
-        ErrorResponse errorResponse = new ErrorResponse();
-        errorResponse.setTimestamp(LocalDateTime.now());
-        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
-        errorResponse.setStatus(NOT_FOUND.value());
-        errorResponse.setError("Badge Not Found");
-        errorResponse.setMessage(e.getMessage());
-        return errorResponse;
-    }
-
-    @ExceptionHandler(CategoryNotFoundException.class)
-    @ResponseStatus(NOT_FOUND)
-    public ErrorResponse handleCategoryNotFoundException(CategoryNotFoundException e, WebRequest request) {
-        ErrorResponse errorResponse = new ErrorResponse();
-        errorResponse.setTimestamp(LocalDateTime.now());
-        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
-        errorResponse.setStatus(NOT_FOUND.value());
-        errorResponse.setError("Category Not Found");
         errorResponse.setMessage(e.getMessage());
         return errorResponse;
     }

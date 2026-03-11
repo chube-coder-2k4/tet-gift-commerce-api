@@ -2,11 +2,13 @@ package com.tetgift.service.impl;
 
 import com.tetgift.dto.request.CategoryRequest;
 import com.tetgift.dto.response.CategoryResponse;
+import com.tetgift.exception.CategoryNotFoundException;
 import com.tetgift.model.Category;
 import com.tetgift.repository.jpa.CategoryRepository;
 import com.tetgift.service.CategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -17,55 +19,61 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public List<CategoryResponse> getAllCategory() {
-        List<Category> cates = cateRepository.findAll();
-        return cates.stream().map(cate -> CategoryResponse.builder()
-                .id(cate.getId())
-                .name(cate.getName())
-                .description(cate.getDescription())
-                .build()).toList();
+        return cateRepository.findByIsActiveTrue().stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     @Override
+    @Transactional
     public CategoryResponse createCate(CategoryRequest cate) {
         Category newCate = Category.builder()
                 .name(cate.getName())
                 .description(cate.getDescription())
+                .isActive(true)
                 .build();
 
         Category savedCate = cateRepository.save(newCate);
-        return CategoryResponse.builder()
-                .id(savedCate.getId())
-                .name(savedCate.getName())
-                .description(savedCate.getDescription())
-                .build();
+        return toResponse(savedCate);
     }
 
     @Override
+    @Transactional
     public CategoryResponse updateCate(Long id, CategoryRequest cate) {
-        Category existingCate = cateRepository.findById(id).orElseThrow(() -> new RuntimeException("Cate not found"));
+        Category existingCate = cateRepository.findByIdAndIsActiveTrue(id)
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found with id: " + id));
+
         existingCate.setName(cate.getName());
         existingCate.setDescription(cate.getDescription());
+
         Category updatedCate = cateRepository.save(existingCate);
-        return CategoryResponse.builder()
-                .id(updatedCate.getId())
-                .name(updatedCate.getName())
-                .description(updatedCate.getDescription())
-                .build();
+        return toResponse(updatedCate);
     }
 
     @Override
+    @Transactional
     public void deleteCate(Long id) {
-        cateRepository.deleteById(id);
+        Category cate = cateRepository.findByIdAndIsActiveTrue(id)
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found with id: " + id));
 
+        // Soft delete
+        cate.setActive(false);
+        cateRepository.save(cate);
     }
 
     @Override
     public CategoryResponse getCateById(Long id) {
-        Category cate = cateRepository.findById(id).orElseThrow(() -> new RuntimeException("Cate not found"));
+        Category cate = cateRepository.findByIdAndIsActiveTrue(id)
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found with id: " + id));
+        return toResponse(cate);
+    }
+
+    private CategoryResponse toResponse(Category cate) {
         return CategoryResponse.builder()
                 .id(cate.getId())
                 .name(cate.getName())
                 .description(cate.getDescription())
+                .isActive(cate.isActive())
                 .build();
     }
 }

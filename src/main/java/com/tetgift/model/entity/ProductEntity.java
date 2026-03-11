@@ -1,30 +1,23 @@
 package com.tetgift.model.entity;
 
+import com.tetgift.model.BaseEntity;
 import com.tetgift.model.Category;
 import jakarta.persistence.*;
-import lombok.Builder;
-import lombok.Data;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 
 @Entity
-@Table(
-        name = "products",
-        indexes = {
-                @Index(name = "idx_product_status_price", columnList = "status, price")
-        }
-)
-@Data
-public class ProductEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@Table(name = "products")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ProductEntity extends BaseEntity<Long> {
 
     @Column(nullable = false, length = 255)
     private String name;
@@ -35,43 +28,25 @@ public class ProductEntity {
     @Column(nullable = false)
     private BigDecimal price;
 
-    private BigDecimal originalPrice;
+    @Column(name = "stock")
+    @Builder.Default
+    private Integer stock = 0;
 
-    @Enumerated(EnumType.STRING)
-    private ProductStatus status;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Category category;
 
-    @CreationTimestamp
-    private LocalDateTime createdAt;
+    @Column(name = "is_active")
+    @Builder.Default
+    private boolean isActive = true;
 
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    @Column(name = "manufacture_date")
+    private LocalDate manufactureDate;
 
-    @OneToOne(mappedBy = "product", cascade = CascadeType.ALL)
-    private ProductInventoryEntity productInventory;
+    @Column(name = "exp_date")
+    private LocalDate expDate;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ProductImageEntity> productImages;
-
-    @OneToOne(mappedBy = "product", cascade = CascadeType.ALL)
-    private ProductRatingSummaryEntity productRatingSummary;
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
-    private List<ProductRatingEntity> productRatings;
-
-    @ManyToMany
-    @JoinTable(
-        name = "product_badge_map",
-        joinColumns = @JoinColumn(name = "product_id"),
-        inverseJoinColumns = @JoinColumn(name = "badge_id")
-    )
-    private Set<ProductBadgeEntity> productBadges;
-
-    @ManyToMany
-    @JoinTable(
-        name = "product_category_map",
-        joinColumns = @JoinColumn(name = "product_id"),
-        inverseJoinColumns = @JoinColumn(name = "category_id")
-    )
-    private Set<Category> categories;
-
+    @Builder.Default
+    private List<ProductImageEntity> productImages = new ArrayList<>();
 }
