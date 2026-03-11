@@ -60,6 +60,11 @@ public class OtpVerifyServiceImpl implements OtpVerifyService {
 
     @Override
     public void resendOtp(String email) {
+        Users user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        if (user.isVerify()) {
+            throw new InvalidDataException("User is already verified");
+        }
         otpVerifyRepository.findById(email).ifPresent(otpVerifyRepository::delete);
         String newOtp = generateOtp();
         saveOtp(email, newOtp);

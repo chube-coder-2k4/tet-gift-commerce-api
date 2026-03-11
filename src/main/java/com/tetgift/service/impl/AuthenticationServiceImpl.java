@@ -13,6 +13,7 @@ import com.tetgift.model.redismodel.RefreshToken;
 import com.tetgift.repository.jpa.UserRepository;
 import com.tetgift.service.AuthenticationService;
 import com.tetgift.service.JwtService;
+import com.tetgift.service.MailService;
 import com.tetgift.service.RefreshTokenService;
 import com.tetgift.util.AuthenticationUtils;
 import io.micrometer.common.util.StringUtils;
@@ -36,6 +37,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final RefreshTokenService tokenService;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationUtils utils;
+    private final MailService mailService;
 
     @Override
     public LoginResponse login(LoginRequest request) {
@@ -101,9 +103,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
 
         String resetToken = jwtService.generateResetPasswordToken(user);
-        log.info("Password reset token generated for user: {}", email);
+        mailService.sendResetPasswordMail(email, resetToken);
+        log.info("Password reset token sent to email: {}", email);
 
-        return resetToken;
+        return "Password reset token has been sent to your email";
     }
 
     @Override
@@ -145,6 +148,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
+
+        // Invalidate all refresh tokens for this user after password change
+        tokenService.deleteByUserId(user.getId());
+
         return "Change password successful";
     }
 
