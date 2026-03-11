@@ -1,8 +1,6 @@
 package com.tetgift.component;
 
-import com.tetgift.model.Role;
 import com.tetgift.model.Users;
-import com.tetgift.repository.jpa.RoleRepository;
 import com.tetgift.repository.jpa.UserRepository;
 import com.tetgift.service.JwtService;
 import jakarta.servlet.http.Cookie;
@@ -25,10 +23,12 @@ import java.io.IOException;
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     private final UserRepository userRepository;
     private final JwtService jwtService;
-    private final RoleRepository roleRepository;
 
     @Value("${app.frontend-url:https://shophuypro.store}")
     private String frontendUrl;
+
+    @Value("${app.cookie-secure:true}")
+    private boolean cookieSecure;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -45,15 +45,15 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 return;
             }
 
-            // Find existing user or create new one
+            // User is guaranteed to exist — CustomOAuth2UserService already created it
             Users user = userRepository.findByEmail(email)
-                    .orElseGet(() -> createUserFromOAuth2(oAuth2User));
+                    .orElseThrow(() -> new IllegalStateException("OAuth2 user not found after processing: " + email));
 
             String jwtToken = jwtService.generateAccessToken(user);
 
             Cookie cookie = new Cookie("JWT_TOKEN", jwtToken);
             cookie.setHttpOnly(true);
-            cookie.setSecure(false);
+            cookie.setSecure(cookieSecure);
             cookie.setPath("/");
             cookie.setMaxAge(24 * 60 * 60);
             response.addCookie(cookie);
@@ -72,29 +72,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         }
     }
 
-    private Users createUserFromOAuth2(OAuth2User oAuth2User) {
-        String email = oAuth2User.getAttribute("email");
-        String name = oAuth2User.getAttribute("name");
-        String givenName = oAuth2User.getAttribute("given_name");
-        String familyName = oAuth2User.getAttribute("family_name");
-
-        String fullName = name != null ? name
-                : (givenName != null && familyName != null ? givenName + " " + familyName : email);
-
-        // Set default role for OAuth2 users
-        Role userRole = roleRepository.findByName("USER").orElse(null);
-
-        Users newUser = Users.builder()
-                .email(email)
-                .fullName(fullName)
-                .username(email != null ? email.split("@")[0] : "unknown")
-                .role(userRole)
-                .isVerify(true) // OAuth2 users are auto-verified
-                .isActive(true)
-                .build();
-
-        return userRepository.save(newUser);
-    }
 
     private void redirectToError(HttpServletRequest request,
             HttpServletResponse response,

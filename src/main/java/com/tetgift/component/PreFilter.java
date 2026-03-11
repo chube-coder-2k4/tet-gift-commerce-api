@@ -55,6 +55,7 @@ public class PreFilter extends OncePerRequestFilter {
             }
         } catch (ExpiredJwtException e) {
             log.warn("[PreFilter] JWT token expired: {}", e.getMessage());
+            response.setHeader("X-Token-Expired", "true");
         } catch (JwtException e) {
             log.warn("[PreFilter] Invalid JWT token: {}", e.getMessage());
         } catch (Exception e) {
