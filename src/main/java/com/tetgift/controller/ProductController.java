@@ -11,10 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Repository;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/products")
@@ -24,6 +21,7 @@ public class ProductController {
     private final ProductService productService;
 
     @PostMapping("/register")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Register Product", description = "Register a new product in the system")
     public ResponseEntity<ResponseData<Long>> registerProduct(@RequestBody @Valid ProductRequest productRequest){
         Long productId = productService.saveProduct(productRequest);
@@ -65,6 +63,7 @@ public class ProductController {
                 ));
     }
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update Product", description = "Update an existing product's information")
     public ResponseEntity<ResponseData<Long>> updateProduct(@PathVariable Long id,
                                                             @RequestBody @Valid ProductRequest productRequest){
@@ -79,6 +78,7 @@ public class ProductController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete Product", description = "Delete a product by its ID")
     public ResponseEntity<ResponseData<String>> deleteProduct(@PathVariable Long id){
         productService.deleteProduct(id);

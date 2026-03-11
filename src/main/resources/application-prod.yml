@@ -60,34 +60,47 @@ spring:
             token-uri: https://github.com/login/oauth/access_token
             user-info-uri: https://api.github.com/user
             user-name-attribute: login
-
----
+  ai:
+    vectorstore:
+      pgvector:
+        initialize-schema: false
+        dimensions: 384
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY}
+        transport: rest
+        chat:
+          options:
+            model: gemini-1.5-flash
+            temperature: 0.7
+    transformers:
+      embedding:
+        onnx:
+          modelUri: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx
+        tokenizer:
+          uri: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json
 
 mail:
   from: ${MAIL_FROM}
 
----
-
 app:
   frontend-url: https://shophuypro.store
-
+  cookie-secure: true
 
 cloudinary:
   cloud-name: ${CLOUDINARY_NAME}
   api-key: ${CLOUDINARY_API_KEY}
   api-secret: ${CLOUDINARY_API_SECRET}
 
----
-
 vnpay:
   tmn-code: ${VNPAY_TMN_CODE}
   hash-secret: ${VNPAY_SECRET_KEY}
-  url:  ${VNPAY_PAY_URL}
+  url: ${VNPAY_PAY_URL}
   api-url: ${VNPAY_API_URL}
   return-url: ${VNPAY_RETURN_URL}
   ipn-url: ${VNPAY_IPN_URL}
-
----
 
 jwt:
   timeout: ${JWT_TIME_OUT}
@@ -100,3 +113,7 @@ logging:
   level:
     root: INFO
     com.tetgift: DEBUG
+
+chatbot:
+  enabled: ${CHATBOT_ENABLED:true}
+  fallback-message: "Xin lỗi, hệ thống AI đang bận. Vui lòng thử lại sau hoặc liên hệ hotline 1900-1234."

@@ -1,6 +1,7 @@
 package com.tetgift.exception;
 
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 import static org.springframework.http.HttpStatus.*;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalHandlerException {
 
     @ExceptionHandler({ ConstraintViolationException.class,
@@ -108,6 +110,7 @@ public class GlobalHandlerException {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(INTERNAL_SERVER_ERROR)
     public ErrorResponse handleException(Exception e, WebRequest request) {
+        log.error("Unexpected error at {}: ", request.getDescription(false), e);
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(LocalDateTime.now());
         errorResponse.setPath(request.getDescription(false).replace("uri=", ""));

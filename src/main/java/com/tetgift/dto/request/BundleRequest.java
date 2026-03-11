@@ -1,5 +1,6 @@
 package com.tetgift.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
@@ -15,6 +16,7 @@ public class BundleRequest {
     @Positive(message = "Price must be positive")
     private BigDecimal price;
 
+    @JsonProperty("isCustom")
     private boolean isCustom = false;
 
     private List<BundleProductRequest> products;
