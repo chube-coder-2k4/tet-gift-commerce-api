@@ -1,8 +1,9 @@
 # 🎁 Tet Gift Commerce API — Frontend Integration Guide
 
-> **Cập nhật:** 2026-03-07  
-> **Version:** 2.0  
-> **Base URL:** `http://localhost:8080/api/v1`  
+> **Cập nhật:** 2026-03-11  
+> **Version:** 2.1  
+> **Base URL (Dev):** `http://localhost:8080/api/v1`  
+> **Base URL (Prod):** `https://api.shophuypro.store/api/v1`  
 > **Swagger UI:** `http://localhost:8080/swagger-ui.html`
 
 ---
@@ -15,33 +16,37 @@
 4. [Pagination](#4-pagination)
 5. [Error Handling](#5-error-handling)
 6. [Enums](#6-enums)
-7. [API Endpoints](#7-api-endpoints)
-   - [7.1 Authentication](#71-authentication)
-   - [7.2 User](#72-user)
-   - [7.3 Role (ADMIN)](#73-role-admin)
-   - [7.4 Address](#74-address)
-   - [7.5 Category](#75-category)
-   - [7.6 Product](#76-product)
-   - [7.7 Bundle](#77-bundle)
-   - [7.8 Cart](#78-cart)
-   - [7.9 Order](#79-order)
-   - [7.10 Payment](#710-payment)
-   - [7.11 Discount](#711-discount)
-   - [7.12 Blog](#712-blog)
-   - [7.13 Product Review](#713-product-review)
+7. [Validation Rules](#7-validation-rules)
+8. [API Endpoints](#8-api-endpoints)
+   - [8.1 Authentication](#81-authentication)
+   - [8.2 User](#82-user)
+   - [8.3 Role (ADMIN)](#83-role-admin)
+   - [8.4 Address](#84-address)
+   - [8.5 Category](#85-category)
+   - [8.6 Product](#86-product)
+   - [8.7 Bundle](#87-bundle)
+   - [8.8 Cart](#88-cart)
+   - [8.9 Order](#89-order)
+   - [8.10 Payment](#810-payment)
+   - [8.11 Discount](#811-discount)
+   - [8.12 Blog](#812-blog)
+   - [8.13 Product Review](#813-product-review)
+   - [8.14 AI Chatbot (RAG)](#814-ai-chatbot-rag)
+9. [WebSocket — Realtime](#9-websocket--realtime)
+10. [Tổng hợp nhanh](#10-tổng-hợp-nhanh--tất-cả-endpoints)
 
 ---
 
 ## 1. Server & Cấu hình
 
-| Thuộc tính | Giá trị |
-|---|---|
-| **Port** | `8080` |
-| **Base URL** | `http://localhost:8080` |
-| **API Prefix** | `/api/v1` |
-| **Swagger UI** | `http://localhost:8080/swagger-ui.html` |
-| **API Docs** | `http://localhost:8080/v3/api-docs` |
-| **WebSocket** | `ws://localhost:8080/ws` |
+| Thuộc tính | Dev | Prod |
+|---|---|---|
+| **Port** | `8080` | `443 (HTTPS)` |
+| **Base URL** | `http://localhost:8080` | `https://api.shophuypro.store` |
+| **API Prefix** | `/api/v1` | `/api/v1` |
+| **Swagger UI** | `http://localhost:8080/swagger-ui.html` | Disabled |
+| **API Docs** | `http://localhost:8080/v3/api-docs` | Disabled |
+| **WebSocket** | `ws://localhost:8080/ws` | `wss://api.shophuypro.store/ws` |
 
 ### CORS Allowed Origins
 
@@ -63,35 +68,6 @@ GET, POST, PUT, DELETE, OPTIONS
 |---|---|---|
 | **PostgreSQL** | `5432` | Database chính |
 | **Redis** | `6379` | Cache OTP, Refresh Token |
-
-### Environment Variables cần thiết (cho Backend)
-
-```env
-# Database
-DATASOURCE_URL=jdbc:postgresql://localhost:5432/tetgift
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=your_password
-
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-
-# JWT
-JWT_SECRET=your_jwt_secret
-JWT_REFRESH_SECRET=your_refresh_secret
-JWT_RESET_PASSWORD_SECRET=your_reset_secret
-JWT_TIME_OUT=3600000
-
-# VNPay
-VNPAY_TMN_CODE=your_tmn_code
-VNPAY_SECRET_KEY=your_secret
-VNPAY_PAY_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-VNPAY_RETURN_URL=http://localhost:3000/payment/callback
-
-# OAuth2
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-```
 
 ---
 
@@ -119,6 +95,23 @@ x-refresh-token: <refresh_token>
 Content-Type: application/json
 ```
 
+### Xử lý Token hết hạn
+
+Khi access token hết hạn, server sẽ:
+- Trả về HTTP `401`
+- Kèm response header: `X-Token-Expired: true`
+
+**Frontend phải:**
+1. Check header `X-Token-Expired: true`
+2. Gọi `POST /auth/refresh-token` với `x-refresh-token` header
+3. Lưu access token mới, retry request ban đầu
+
+```
+Access token hết hạn → nhận 401 + X-Token-Expired: true
+→ gọi POST /auth/refresh-token (x-refresh-token: <refresh_token>)
+→ nhận accessToken mới → retry request
+```
+
 ### Public Endpoints (không cần token)
 
 | Method | URL |
@@ -140,7 +133,12 @@ Content-Type: application/json
 |---|---|
 | Google | `http://localhost:8080/oauth2/authorization/google` |
 | GitHub | `http://localhost:8080/oauth2/authorization/github` |
-| Callback | `http://localhost:3000/oauth2/redirect?token=<jwt>&email=<email>` |
+| Callback redirect | `http://localhost:3000/oauth2/redirect?token=<jwt>&email=<email>` |
+
+> [!NOTE]
+> Sau khi OAuth2 thành công, token được gửi qua **query param `token`** trong URL redirect.  
+> Frontend đọc `token` từ URL, lưu vào storage và dùng như access token bình thường.  
+> Token **không** có refresh token tương ứng — khi hết hạn, user cần login lại qua OAuth2.
 
 ---
 
@@ -209,7 +207,7 @@ Các API trả về danh sách có phân trang sử dụng wrapper `PageResponse
 
 ```json
 {
-  "timestamp": "2026-03-07 12:00:00",
+  "timestamp": "2026-03-11 12:00:00",
   "status": 400,
   "path": "/api/v1/auth/login",
   "error": "Invalid Payload",
@@ -224,10 +222,10 @@ Các API trả về danh sách có phân trang sử dụng wrapper `PageResponse
 | `200` | Thành công |
 | `201` | Tạo mới thành công |
 | `400` | Dữ liệu không hợp lệ (validation) |
-| `401` | Chưa đăng nhập / Token hết hạn |
+| `401` | Chưa đăng nhập / Token hết hạn → check header `X-Token-Expired` |
 | `403` | Không có quyền truy cập |
 | `404` | Không tìm thấy tài nguyên |
-| `409` | Xung đột dữ liệu (duplicate, logic error) |
+| `409` | Xung đột dữ liệu (email/username đã tồn tại, logic error) |
 | `500` | Lỗi server |
 
 ---
@@ -241,15 +239,15 @@ CREATED → WAITING_PAYMENT → PAID → PROCESSING → SHIPPED → COMPLETED
                                                          → CANCELLED
 ```
 
-| Value | Mô tả |
-|---|---|
-| `CREATED` | Đơn hàng vừa tạo |
-| `WAITING_PAYMENT` | Đang chờ thanh toán |
-| `PAID` | Đã thanh toán |
-| `PROCESSING` | Đang xử lý |
-| `SHIPPED` | Đang giao hàng |
-| `COMPLETED` | Hoàn thành |
-| `CANCELLED` | Đã hủy |
+| Value | Mô tả | User có thể set? |
+|---|---|---|
+| `CREATED` | Đơn hàng vừa tạo | ❌ (tự động) |
+| `WAITING_PAYMENT` | Đang chờ thanh toán | ❌ (tự động sau createPayment) |
+| `PAID` | Đã thanh toán | ❌ (tự động sau VNPay callback) |
+| `PROCESSING` | Đang xử lý | ✅ ADMIN only |
+| `SHIPPED` | Đang giao hàng | ✅ ADMIN only |
+| `COMPLETED` | Hoàn thành | ✅ ADMIN only |
+| `CANCELLED` | Đã hủy | ✅ User (chỉ khi CREATED/WAITING_PAYMENT) |
 
 ### PaymentMethod
 
@@ -277,11 +275,41 @@ CREATED → WAITING_PAYMENT → PAID → PROCESSING → SHIPPED → COMPLETED
 
 ---
 
-## 7. API Endpoints
+## 7. Validation Rules
+
+### Password
+
+| Field | Rule |
+|---|---|
+| `password` (đăng ký) | Tối thiểu **6** ký tự |
+| `oldPassword`, `newPassword` (đổi/reset mật khẩu) | Tối thiểu **8** ký tự |
+
+### Các field bắt buộc theo endpoint
+
+| Endpoint | Field bắt buộc |
+|---|---|
+| `POST /user/register` | `fullName`, `email`, `password` (≥6), `username` (3-50 ký tự) |
+| `POST /auth/login` | `usernameOrEmail`, `password` (≥6) |
+| `POST /auth/forgot-password` | `email` (valid email format) |
+| `POST /auth/reset-password` | `token`, `newPassword` (≥8), `confirmPassword` |
+| `POST /auth/change-password` | `oldPassword` (≥8), `newPassword` (≥8), `confirmPassword` |
+| `POST /addresses` | `receiverName`, `phone`, `addressDetail` |
+| `POST /categories` | `name` |
+| `POST /products/register` | `name`, `price` (>0) |
+| `POST /bundles` | `name`, `price` (>0) |
+| `POST /discounts` | `code`, `discountValue` (>0) |
+| `POST /products/{id}/reviews` | `rating` (1-5) |
+| `POST /blog-topics` | `name` |
+| `POST /blogs` | `title` |
+| `POST /payments/create` | `orderId`, `method` |
 
 ---
 
-### 7.1 Authentication
+## 8. API Endpoints
+
+---
+
+### 8.1 Authentication
 
 Base: `/api/v1/auth`
 
@@ -294,6 +322,9 @@ Base: `/api/v1/auth`
   "password": "12345678"
 }
 ```
+
+> [!NOTE]
+> Field `usernameOrEmail` chấp nhận cả **username** lẫn **email**.
 
 **Response:**
 ```json
@@ -365,9 +396,13 @@ x-refresh-token: <refresh_token>
 {
   "status": 200,
   "message": "If the email is registered, a password reset token has been sent",
-  "data": "<reset_token>"
+  "data": "Password reset token has been sent to your email"
 }
 ```
+
+> [!IMPORTANT]
+> Reset token được gửi qua **email**, **KHÔNG** trả về trong response body.  
+> Người dùng mở email → copy token → điền vào form reset password.
 
 ---
 
@@ -376,11 +411,13 @@ x-refresh-token: <refresh_token>
 **Request:**
 ```json
 {
-  "token": "<reset_token>",
+  "token": "<reset_token_từ_email>",
   "newPassword": "newpassword123",
   "confirmPassword": "newpassword123"
 }
 ```
+
+> Password tối thiểu **8 ký tự**. Token có hiệu lực **10 phút**.
 
 **Response:**
 ```json
@@ -395,6 +432,8 @@ x-refresh-token: <refresh_token>
 
 #### 🔐 POST `/auth/change-password` — Đổi mật khẩu
 
+**Header:** `Authorization: Bearer <access_token>`
+
 **Request:**
 ```json
 {
@@ -403,6 +442,9 @@ x-refresh-token: <refresh_token>
   "confirmPassword": "newpassword123"
 }
 ```
+
+> Password tối thiểu **8 ký tự**.  
+> Sau khi đổi thành công, **tất cả refresh token cũ bị vô hiệu hóa** — user cần login lại.
 
 **Response:**
 ```json
@@ -452,9 +494,12 @@ x-refresh-token: <refresh_token>
 }
 ```
 
+> [!NOTE]
+> Nếu user đã verify, API trả về `409 Conflict`.
+
 ---
 
-### 7.2 User
+### 8.2 User
 
 Base: `/api/v1/user`
 
@@ -464,12 +509,15 @@ Base: `/api/v1/user`
 ```json
 {
   "email": "user@example.com",
-  "password": "12345678",
+  "password": "123456",
   "fullName": "Nguyễn Văn A",
   "phone": "0901234567",
   "username": "nguyenvana"
 }
 ```
+
+> Password tối thiểu **6 ký tự**. Username **3-50 ký tự**.  
+> Sau khi đăng ký, một email OTP sẽ được gửi — cần verify trước khi đăng nhập.
 
 **Response:**
 ```json
@@ -480,9 +528,11 @@ Base: `/api/v1/user`
 }
 ```
 
+`data` là `userId` vừa tạo.
+
 ---
 
-#### 🔐 GET `/user?page=0&size=10&sortBy=createdAt&sortDir=desc` — Lấy danh sách users
+#### 🔐 GET `/user?page=0&size=10&sortBy=createdAt&sortDir=desc` — Lấy danh sách users (ADMIN)
 
 **Response:**
 ```json
@@ -501,7 +551,9 @@ Base: `/api/v1/user`
         "email": "user@example.com",
         "phone": "0901234567",
         "username": "nguyenvana",
-        "roleName": "USER"
+        "roleName": "USER",
+        "createdAt": "2026-03-01T10:00:00",
+        "updatedAt": "2026-03-01T10:00:00"
       }
     ]
   }
@@ -523,7 +575,9 @@ Base: `/api/v1/user`
     "email": "user@example.com",
     "phone": "0901234567",
     "username": "nguyenvana",
-    "roleName": "USER"
+    "roleName": "USER",
+    "createdAt": "2026-03-01T10:00:00",
+    "updatedAt": "2026-03-01T10:00:00"
   }
 }
 ```
@@ -532,11 +586,13 @@ Base: `/api/v1/user`
 
 #### 🔐 PUT `/user/{id}` — Cập nhật user
 
-**Request:**
+**Request:** *(tất cả fields đều optional)*
 ```json
 {
   "fullName": "Nguyễn Văn B",
-  "phone": "0987654321"
+  "email": "newemail@example.com",
+  "phone": "0987654321",
+  "username": "newusername"
 }
 ```
 
@@ -549,9 +605,11 @@ Base: `/api/v1/user`
 }
 ```
 
+`data` là `userId` vừa cập nhật.
+
 ---
 
-#### 🔐 DELETE `/user/{id}` — Xóa user
+#### 🔐 DELETE `/user/{id}` — Xóa user (ADMIN)
 
 **Response:**
 ```json
@@ -564,11 +622,14 @@ Base: `/api/v1/user`
 
 ---
 
-### 7.3 Role (ADMIN)
+### 8.3 Role (ADMIN)
 
 Base: `/api/v1/role`
 
-#### 🔐 POST `/role` — Tạo role
+> [!WARNING]
+> Tất cả write endpoints (`POST`, `PUT`, `DELETE`) yêu cầu role **ADMIN**.
+
+#### 🔐 POST `/role` — Tạo role (ADMIN)
 
 **Request:**
 ```json
@@ -611,7 +672,20 @@ Base: `/api/v1/role`
 
 #### 🔐 GET `/role/{id}` — Lấy role theo ID
 
-#### 🔐 PUT `/role?id=1` — Cập nhật role
+**Response:**
+```json
+{
+  "status": 200,
+  "message": "Role retrieved successfully",
+  "data": {
+    "id": 1,
+    "name": "ADMIN",
+    "description": "Administrator role"
+  }
+}
+```
+
+#### 🔐 PUT `/role?id=1` — Cập nhật role (ADMIN)
 
 **Request:**
 ```json
@@ -621,16 +695,16 @@ Base: `/api/v1/role`
 }
 ```
 
-#### 🔐 DELETE `/role?id=1` — Xóa role
+#### 🔐 DELETE `/role?id=1` — Xóa role (ADMIN)
 
 ---
 
-### 7.4 Address
+### 8.4 Address
 
 Base: `/api/v1/addresses`
 
 > [!IMPORTANT]
-> Tất cả endpoints cần **Bearer Token**. User chỉ xem/sửa/xóa được address **của mình**.
+> Tất cả endpoints cần **Bearer Token**. User chỉ xem/sửa/xóa được address **của mình** — nếu cố truy cập address của người khác sẽ nhận `403 Forbidden`.
 
 #### 🔐 POST `/addresses` — Tạo địa chỉ mới
 
@@ -643,6 +717,8 @@ Base: `/api/v1/addresses`
   "isDefault": true
 }
 ```
+
+> Nếu `isDefault: true`, tất cả địa chỉ mặc định cũ sẽ tự động bị bỏ mặc định.
 
 **Response:**
 ```json
@@ -662,6 +738,8 @@ Base: `/api/v1/addresses`
 ---
 
 #### 🔐 GET `/addresses` — Lấy danh sách địa chỉ
+
+> Địa chỉ mặc định (`isDefault: true`) sẽ được **trả về đầu tiên**.
 
 **Response:**
 ```json
@@ -691,11 +769,36 @@ Base: `/api/v1/addresses`
 
 #### 🔐 GET `/addresses/{id}` — Lấy chi tiết 1 địa chỉ
 
+**Response:**
+```json
+{
+  "status": 200,
+  "message": "Address fetched",
+  "data": {
+    "id": 1,
+    "receiverName": "Nguyễn Văn A",
+    "phone": "0901234567",
+    "addressDetail": "123 Đường ABC, Phường 1, Quận 1, TP.HCM",
+    "isDefault": true
+  }
+}
+```
+
+---
+
 #### 🔐 PUT `/addresses/{id}` — Cập nhật địa chỉ
 
-**Request:** *(giống POST)*
+**Request:** *(giống POST, tất cả fields bắt buộc)*
 
 #### 🔐 DELETE `/addresses/{id}` — Xóa địa chỉ
+
+**Response:**
+```json
+{
+  "status": 200,
+  "message": "Address deleted successfully"
+}
+```
 
 #### 🔐 PUT `/addresses/{id}/default` — Đặt làm địa chỉ mặc định
 
@@ -716,7 +819,7 @@ Base: `/api/v1/addresses`
 
 ---
 
-### 7.5 Category
+### 8.5 Category
 
 Base: `/api/v1/categories`
 
@@ -748,7 +851,21 @@ Base: `/api/v1/categories`
 
 #### 🔓 GET `/categories/{id}` — Lấy danh mục theo ID
 
-#### 🔐 POST `/categories` — Tạo danh mục
+**Response:**
+```json
+{
+  "status": 200,
+  "message": "Category retrieved successfully",
+  "data": {
+    "id": 1,
+    "name": "Bánh kẹo Tết",
+    "description": "Các loại bánh kẹo truyền thống",
+    "isActive": true
+  }
+}
+```
+
+#### 🔐 POST `/categories` — Tạo danh mục (ADMIN)
 
 **Request:**
 ```json
@@ -758,15 +875,37 @@ Base: `/api/v1/categories`
 }
 ```
 
-#### 🔐 PUT `/categories/{id}` — Cập nhật danh mục
+**Response:**
+```json
+{
+  "status": 201,
+  "message": "Category created successfully",
+  "data": {
+    "id": 3,
+    "name": "Trái cây nhập khẩu",
+    "description": "Trái cây cao cấp nhập khẩu",
+    "isActive": true
+  }
+}
+```
+
+#### 🔐 PUT `/categories/{id}` — Cập nhật danh mục (ADMIN)
 
 **Request:** *(giống POST)*
 
-#### 🔐 DELETE `/categories/{id}` — Xóa danh mục (soft delete)
+#### 🔐 DELETE `/categories/{id}` — Xóa danh mục (soft delete, ADMIN)
+
+**Response:**
+```json
+{
+  "status": 200,
+  "message": "Category deleted successfully"
+}
+```
 
 ---
 
-### 7.6 Product
+### 8.6 Product
 
 Base: `/api/v1/products`
 
@@ -801,13 +940,6 @@ Base: `/api/v1/products`
             "imageType": "jpg",
             "publicId": "products/banh-chung-1",
             "isPrimary": true
-          },
-          {
-            "id": 2,
-            "imageUrl": "https://res.cloudinary.com/xxx/image2.jpg",
-            "imageType": "jpg",
-            "publicId": "products/banh-chung-2",
-            "isPrimary": false
           }
         ]
       }
@@ -816,15 +948,19 @@ Base: `/api/v1/products`
 }
 ```
 
+> `isActive: false` items **không** được trả về trong list — chỉ sản phẩm active.
+
 ---
 
 #### 🔓 GET `/products/{id}` — Lấy chi tiết sản phẩm
 
 **Response:** *(cấu trúc giống 1 item trong list trên)*
 
+> Nếu sản phẩm không tồn tại hoặc đã xóa → `404 Not Found`
+
 ---
 
-#### 🔐 POST `/products/register` — Tạo sản phẩm mới
+#### 🔐 POST `/products/register` — Tạo sản phẩm mới (ADMIN)
 
 **Request:**
 ```json
@@ -847,6 +983,10 @@ Base: `/api/v1/products`
 }
 ```
 
+> `categoryId`, `manufactureDate`, `expDate`, `images` đều **optional**.  
+> `stock` mặc định là `0` nếu không truyền.  
+> Ngày theo định dạng `yyyy-MM-dd`.
+
 **Response:**
 ```json
 {
@@ -856,17 +996,23 @@ Base: `/api/v1/products`
 }
 ```
 
----
-
-#### 🔐 PUT `/products/{id}` — Cập nhật sản phẩm
-
-**Request:** *(giống POST)*
-
-#### 🔐 DELETE `/products/{id}` — Xóa sản phẩm (soft delete)
+`data` là `productId` vừa tạo.
 
 ---
 
-### 7.7 Bundle
+#### 🔐 PUT `/products/{id}` — Cập nhật sản phẩm (ADMIN)
+
+**Request:** *(giống POST, tất cả fields bắt buộc khi update)*
+
+> Khi truyền `images`, **toàn bộ ảnh cũ bị thay thế** bởi danh sách mới.
+
+#### 🔐 DELETE `/products/{id}` — Xóa sản phẩm (soft delete, ADMIN)
+
+> Soft delete: `isActive` được set thành `false`. Sản phẩm không còn xuất hiện trong danh sách.
+
+---
+
+### 8.7 Bundle
 
 Base: `/api/v1/bundles`
 
@@ -915,7 +1061,11 @@ Base: `/api/v1/bundles`
 
 #### 🔓 GET `/bundles/{id}` — Lấy chi tiết combo
 
-#### 🔐 POST `/bundles` — Tạo combo mới
+**Response:** *(cấu trúc giống 1 item trong list trên)*
+
+---
+
+#### 🔐 POST `/bundles` — Tạo combo mới (ADMIN)
 
 **Request:**
 ```json
@@ -930,6 +1080,9 @@ Base: `/api/v1/bundles`
 }
 ```
 
+> `isCustom`: `false` = combo cố định do admin tạo, `true` = combo khách tự chọn.  
+> `products` là **optional**. `quantity` mặc định `1` nếu không truyền.
+
 **Response:**
 ```json
 {
@@ -939,15 +1092,17 @@ Base: `/api/v1/bundles`
 }
 ```
 
-#### 🔐 PUT `/bundles/{id}` — Cập nhật combo
+`data` là `bundleId`.
+
+#### 🔐 PUT `/bundles/{id}` — Cập nhật combo (ADMIN)
 
 **Request:** *(giống POST)*
 
-#### 🔐 DELETE `/bundles/{id}` — Xóa combo (soft delete)
+#### 🔐 DELETE `/bundles/{id}` — Xóa combo (soft delete, ADMIN)
 
 ---
 
-### 7.8 Cart
+### 8.8 Cart
 
 Base: `/api/v1/cart`
 
@@ -1011,21 +1166,44 @@ Base: `/api/v1/cart`
 }
 ```
 
+> `quantity` mặc định `1` nếu không truyền.  
+> `itemType` **bắt buộc**, giá trị là `"PRODUCT"` hoặc `"BUNDLE"` (case-insensitive).
+
+**Response:** *(CartResponse như trên, trả về giỏ hàng mới)*
+
 ---
 
 #### 🔐 PUT `/cart/items/{itemId}?quantity=3` — Cập nhật số lượng
 
-> Nếu `quantity <= 0`, item sẽ bị xóa khỏi giỏ hàng.
+> Nếu `quantity <= 0`, item sẽ bị **xóa khỏi giỏ hàng**.
+
+**Response:** *(CartResponse như trên)*
 
 ---
 
 #### 🔐 DELETE `/cart/items/{itemId}` — Xóa item khỏi giỏ
 
+**Response:**
+```json
+{
+  "status": 200,
+  "message": "Item removed from cart"
+}
+```
+
 #### 🔐 DELETE `/cart` — Xóa toàn bộ giỏ hàng
+
+**Response:**
+```json
+{
+  "status": 200,
+  "message": "Cart cleared"
+}
+```
 
 ---
 
-### 7.9 Order
+### 8.9 Order
 
 Base: `/api/v1/orders`
 
@@ -1046,10 +1224,13 @@ Base: `/api/v1/orders`
 }
 ```
 
-> [!TIP]
-> Các field VAT là **tùy chọn**. Nếu không cần xuất hóa đơn VAT, bỏ qua.
-> 
-> `discountCode` cũng **tùy chọn**. Nếu có, sẽ trừ giá trị discount vào tổng đơn.
+> Tất cả fields đều **optional**.  
+> `addressId` là ID địa chỉ giao hàng (từ danh sách address của user).  
+> Nếu `discountCode` hợp lệ, giá trị discount sẽ được trừ vào `totalAmount`.  
+> Các field `vat*` chỉ cần khi muốn xuất hóa đơn VAT.
+
+> [!WARNING]
+> **Giỏ hàng phải không được rỗng** khi tạo đơn.
 
 **Response:**
 ```json
@@ -1082,33 +1263,82 @@ Base: `/api/v1/orders`
         "subtotal": 500000.00
       }
     ],
-    "createdAt": "2026-03-07T12:00:00"
+    "createdAt": "2026-03-11T12:00:00"
   }
 }
 ```
 
 > [!NOTE]
-> Sau khi tạo đơn, **giỏ hàng sẽ bị xóa sạch** tự động.
-> 
+> Sau khi tạo đơn thành công, **giỏ hàng sẽ bị xóa sạch** tự động.  
 > `priceSnapshot` là giá tại thời điểm đặt hàng, **KHÔNG** thay đổi khi sản phẩm đổi giá.
 
 ---
 
 #### 🔐 GET `/orders?page=0&size=10` — Lấy danh sách đơn hàng của tôi
 
-#### 🔐 GET `/orders/{id}` — Lấy chi tiết đơn hàng
-
-#### 🔐 PUT `/orders/{id}/cancel` — Hủy đơn hàng
-
-> Chỉ hủy được khi status là `CREATED` hoặc `WAITING_PAYMENT`
-
-#### 🔐 PUT `/orders/{id}/status?status=PROCESSING` — Cập nhật trạng thái (ADMIN)
-
-> Giá trị status hợp lệ: `CREATED`, `WAITING_PAYMENT`, `PAID`, `PROCESSING`, `SHIPPED`, `COMPLETED`, `CANCELLED`
+**Response:**
+```json
+{
+  "status": 200,
+  "message": "Orders fetched",
+  "data": {
+    "pageNo": 0,
+    "pageSize": 10,
+    "totalPages": 1,
+    "totalItems": 3,
+    "data": [
+      {
+        "id": 1,
+        "status": "PAID",
+        "totalAmount": 700000.00,
+        "items": [ ... ],
+        "createdAt": "2026-03-11T12:00:00"
+      }
+    ]
+  }
+}
+```
 
 ---
 
-### 7.10 Payment
+#### 🔐 GET `/orders/{id}` — Lấy chi tiết đơn hàng
+
+**Response:** *(cấu trúc đầy đủ như khi tạo đơn)*
+
+---
+
+#### 🔐 PUT `/orders/{id}/cancel` — Hủy đơn hàng
+
+> Chỉ hủy được khi status là `CREATED` hoặc `WAITING_PAYMENT`.  
+> Nếu đơn đã `PAID` hoặc xa hơn → `409 Conflict`.
+
+**Response:**
+```json
+{
+  "status": 200,
+  "message": "Order cancelled",
+  "data": { ... }
+}
+```
+
+---
+
+#### 🔐 PUT `/orders/{id}/status?status=PROCESSING` — Cập nhật trạng thái (ADMIN)
+
+**Query param:** `status` — giá trị hợp lệ: `CREATED`, `WAITING_PAYMENT`, `PAID`, `PROCESSING`, `SHIPPED`, `COMPLETED`, `CANCELLED`
+
+**Response:**
+```json
+{
+  "status": 200,
+  "message": "Order status updated",
+  "data": { ... }
+}
+```
+
+---
+
+### 8.10 Payment
 
 Base: `/api/v1/payments`
 
@@ -1130,6 +1360,9 @@ Base: `/api/v1/payments`
 }
 ```
 
+> `method` chỉ chấp nhận `"COD"` hoặc `"VN_PAY"` (case-sensitive).  
+> Đơn phải ở trạng thái `CREATED` — nếu không sẽ nhận `409 Conflict`.
+
 **Response (VNPay):**
 ```json
 {
@@ -1143,13 +1376,15 @@ Base: `/api/v1/payments`
     "amount": 700000.00,
     "transactionId": null,
     "paidAt": null,
-    "paymentUrl": "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?vnp_Amount=70000000&vnp_Command=pay&..."
+    "paymentUrl": "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?vnp_Amount=70000000&..."
   }
 }
 ```
 
 > [!TIP]
-> Với VNPay, redirect user tới `paymentUrl` để thanh toán. Sau khi thanh toán xong, VNPay sẽ redirect về `VNPAY_RETURN_URL`.
+> Với VNPay: redirect user tới `paymentUrl`.  
+> Sau thanh toán, VNPay redirect về `VNPAY_RETURN_URL` bạn cấu hình.  
+> `paymentUrl` là `null` với method `COD`.
 
 **Response (COD):**
 ```json
@@ -1173,9 +1408,9 @@ Base: `/api/v1/payments`
 
 #### 🔓 GET `/payments/vnpay-callback?vnp_TxnRef=1&vnp_ResponseCode=00` — VNPay callback
 
-> Endpoint này được VNPay gọi tự động. Frontend **KHÔNG** cần gọi trực tiếp.
-> 
-> `vnp_ResponseCode = "00"` nghĩa là thành công.
+> Endpoint này được **VNPay gọi tự động**. Frontend **KHÔNG** cần gọi trực tiếp.  
+> `vnp_ResponseCode = "00"` → thanh toán thành công → order chuyển sang `PAID`.  
+> `vnp_ResponseCode` khác → thanh toán thất bại → payment `FAILED`.
 
 ---
 
@@ -1193,7 +1428,7 @@ Base: `/api/v1/payments`
     "status": "SUCCESS",
     "amount": 700000.00,
     "transactionId": "1",
-    "paidAt": "2026-03-07T12:05:00",
+    "paidAt": "2026-03-11T12:05:00",
     "paymentUrl": null
   }
 }
@@ -1201,7 +1436,7 @@ Base: `/api/v1/payments`
 
 ---
 
-### 7.11 Discount
+### 8.11 Discount
 
 Base: `/api/v1/discounts`
 
@@ -1216,6 +1451,9 @@ Base: `/api/v1/discounts`
   "endDate": "2026-03-31T23:59:59"
 }
 ```
+
+> `code` sẽ tự động được chuyển thành **chữ hoa**.  
+> `startDate`, `endDate` đều **optional**. Định dạng: `yyyy-MM-dd'T'HH:mm:ss`.
 
 **Response:**
 ```json
@@ -1245,7 +1483,12 @@ Base: `/api/v1/discounts`
 
 #### 🔐 DELETE `/discounts/{id}` — Xóa mã giảm giá (soft delete, ADMIN)
 
+---
+
 #### 🔐 POST `/discounts/validate?code=TET2026` — Kiểm tra mã giảm giá
+
+> [!NOTE]
+> Đây là `POST` request với `code` là **query parameter**, không phải request body.
 
 **Response (hợp lệ):**
 ```json
@@ -1263,10 +1506,10 @@ Base: `/api/v1/discounts`
 }
 ```
 
-**Response (không hợp lệ):**
+**Response (không hợp lệ / hết hạn):**
 ```json
 {
-  "timestamp": "2026-03-07 12:00:00",
+  "timestamp": "2026-03-11 12:00:00",
   "status": 404,
   "path": "/api/v1/discounts/validate",
   "error": "Not Found",
@@ -1274,9 +1517,20 @@ Base: `/api/v1/discounts`
 }
 ```
 
+**Response (chưa đến ngày hiệu lực):**
+```json
+{
+  "timestamp": "2026-03-11 12:00:00",
+  "status": 409,
+  "path": "/api/v1/discounts/validate",
+  "error": "Conflict",
+  "message": "Discount code is not yet active"
+}
+```
+
 ---
 
-### 7.12 Blog
+### 8.12 Blog
 
 #### Blog Topics
 
@@ -1297,6 +1551,8 @@ Base: `/api/v1/blog-topics`
 }
 ```
 
+---
+
 #### 🔐 POST `/blog-topics` — Tạo chủ đề (ADMIN)
 
 **Request:**
@@ -1306,7 +1562,21 @@ Base: `/api/v1/blog-topics`
 }
 ```
 
+**Response:**
+```json
+{
+  "status": 201,
+  "message": "Topic created",
+  "data": {
+    "id": 1,
+    "name": "Ẩm thực Tết"
+  }
+}
+```
+
 #### 🔐 PUT `/blog-topics/{id}` — Cập nhật chủ đề (ADMIN)
+
+**Request:** *(giống POST)*
 
 #### 🔐 DELETE `/blog-topics/{id}` — Xóa chủ đề (ADMIN)
 
@@ -1346,6 +1616,24 @@ Base: `/api/v1/blogs`
 
 #### 🔓 GET `/blogs/{id}` — Lấy chi tiết bài viết
 
+**Response:**
+```json
+{
+  "status": 200,
+  "message": "Blog fetched",
+  "data": {
+    "id": 1,
+    "title": "Top 10 Món Quà Tết Ý Nghĩa 2026",
+    "content": "<p>Tết Nguyên Đán là dịp...</p>",
+    "topicName": "Quà Tết ý nghĩa",
+    "topicId": 3,
+    "createdAt": "2026-02-15T10:00:00"
+  }
+}
+```
+
+---
+
 #### 🔐 POST `/blogs` — Tạo bài viết (ADMIN)
 
 **Request:**
@@ -1357,6 +1645,24 @@ Base: `/api/v1/blogs`
 }
 ```
 
+> `content` và `topicId` đều **optional**.
+
+**Response:**
+```json
+{
+  "status": 201,
+  "message": "Blog created",
+  "data": {
+    "id": 1,
+    "title": "Top 10 Món Quà Tết Ý Nghĩa 2026",
+    "content": "<p>Tết Nguyên Đán là dịp...</p>",
+    "topicName": "Quà Tết ý nghĩa",
+    "topicId": 3,
+    "createdAt": "2026-03-11T10:00:00"
+  }
+}
+```
+
 #### 🔐 PUT `/blogs/{id}` — Cập nhật bài viết (ADMIN)
 
 **Request:** *(giống POST)*
@@ -1365,7 +1671,7 @@ Base: `/api/v1/blogs`
 
 ---
 
-### 7.13 Product Review
+### 8.13 Product Review
 
 #### 🔓 GET `/products/{productId}/reviews?page=0&size=10` — Lấy đánh giá sản phẩm
 
@@ -1388,15 +1694,6 @@ Base: `/api/v1/blogs`
         "rating": 5,
         "comment": "Bánh rất ngon, giao hàng nhanh!",
         "createdAt": "2026-02-20T14:30:00"
-      },
-      {
-        "id": 2,
-        "productId": 1,
-        "userId": 8,
-        "userName": "Trần Thị B",
-        "rating": 4,
-        "comment": "Chất lượng tốt",
-        "createdAt": "2026-02-19T10:00:00"
       }
     ]
   }
@@ -1417,6 +1714,9 @@ Base: `/api/v1/blogs`
   "comment": "Bánh rất ngon, giao hàng nhanh!"
 }
 ```
+
+> `rating` **bắt buộc**, giá trị từ **1 đến 5**.  
+> `comment` là **optional**.
 
 **Response:**
 ```json
@@ -1447,27 +1747,185 @@ Base: `/api/v1/blogs`
 }
 ```
 
+**Response:**
+```json
+{
+  "status": 200,
+  "message": "Review updated",
+  "data": {
+    "id": 1,
+    "productId": 1,
+    "userId": 5,
+    "userName": "Nguyễn Văn A",
+    "rating": 4,
+    "comment": "Cập nhật: Bánh vẫn ngon nhưng đóng gói hơi đơn giản",
+    "createdAt": "2026-02-20T14:30:00"
+  }
+}
+```
+
 #### 🔐 DELETE `/reviews/{reviewId}` — Xóa đánh giá (chỉ chủ sở hữu)
+
+**Response:**
+```json
+{
+  "status": 200,
+  "message": "Review deleted"
+}
+```
 
 ---
 
-## 📌 WebSocket — Realtime Order Status
+### 8.14 AI Chatbot (RAG)
 
-### Kết nối
+Base: `/api/v1/chatbot`
 
+> [!NOTE]
+> Chatbot sử dụng RAG (Retrieval-Augmented Generation) để tư vấn sản phẩm dựa trên dữ liệu thực, **không bịa thông tin**.
+
+#### 🔓 POST `/chatbot/chat` — Chat với AI
+
+**Request:**
+```json
+{
+  "message": "Tôi cần tìm quà Tết dưới 500k cho bố mẹ",
+  "sessionId": "abc123-uuid" 
+}
 ```
-ws://localhost:8080/ws
+
+> `sessionId` là **optional**. Nếu không truyền, server tự tạo session mới.  
+> Nếu user đã đăng nhập, session sẽ được liên kết với tài khoản.
+
+**Response:**
+```json
+{
+  "status": 200,
+  "message": "Chat processed successfully",
+  "data": {
+    "sessionId": "abc123-uuid",
+    "message": "Dạ, shop có nhiều sản phẩm phù hợp với ngân sách dưới 500.000đ để tặng bố mẹ ạ:\n\n1. **Hộp bánh Tết Truyền Thống** - 280.000đ - Còn 200 sản phẩm\n2. **Trà Ô Long Đài Loan** - 350.000đ - Còn 120 sản phẩm\n...",
+    "timestamp": "2026-03-11T14:30:00",
+    "detectedIntent": "PRODUCT_SEARCH",
+    "success": true,
+    "suggestions": [
+      {
+        "id": 3,
+        "type": "PRODUCT",
+        "name": "Hộp bánh Tết Truyền Thống",
+        "price": "280000",
+        "stock": 200,
+        "imageUrl": "https://res.cloudinary.com/xxx/image.jpg"
+      },
+      {
+        "id": 7,
+        "type": "PRODUCT",
+        "name": "Trà Ô Long Đài Loan",
+        "price": "350000",
+        "stock": 120,
+        "imageUrl": null
+      }
+    ]
+  }
+}
 ```
 
-### Subscribe channel
+**Các loại Intent được phát hiện:**
 
+| Intent | Mô tả |
+|---|---|
+| `PRODUCT_SEARCH` | Tìm sản phẩm theo giá, danh mục, từ khóa |
+| `BUNDLE_SEARCH` | Tìm combo/giỏ quà |
+| `CATEGORY_BROWSE` | Duyệt theo danh mục |
+| `STOCK_CHECK` | Hỏi tồn kho, còn hàng không |
+| `DISCOUNT_POLICY` | Hỏi giảm giá, khuyến mãi |
+| `SHOP_INFO` | Thông tin cửa hàng, liên hệ |
+| `GENERAL_CHAT` | Câu hỏi chung khác |
+
+**Ví dụ câu hỏi:**
+- "Có sản phẩm nào dưới 500k không?"
+- "Cho tôi xem các combo quà Tết"
+- "Bánh chưng còn hàng không?"
+- "Mua nhiều có được giảm giá không?"
+- "Hotline của shop là gì?"
+
+---
+
+#### 🔓 GET `/chatbot/history/{sessionId}` — Lấy lịch sử chat
+
+**Response:**
+```json
+{
+  "status": 200,
+  "message": "History fetched successfully",
+  "data": [
+    {
+      "id": 1,
+      "role": "USER",
+      "content": "Có sản phẩm nào dưới 500k không?",
+      "intent": null,
+      "createdAt": "2026-03-11T14:30:00"
+    },
+    {
+      "id": 2,
+      "role": "ASSISTANT",
+      "content": "Dạ, shop có nhiều sản phẩm phù hợp...",
+      "intent": "PRODUCT_SEARCH",
+      "createdAt": "2026-03-11T14:30:02"
+    }
+  ]
+}
 ```
-/user/{username}/queue/order-status
+
+---
+
+#### 🔐 POST `/chatbot/embeddings/sync` — Đồng bộ embeddings (ADMIN)
+
+> Endpoint này dùng để re-generate embeddings cho tất cả sản phẩm và combo.  
+> Chạy sau khi thêm/sửa nhiều sản phẩm để AI tìm kiếm chính xác hơn.
+
+**Response:**
+```json
+{
+  "status": 200,
+  "message": "Embeddings synced successfully",
+  "data": {
+    "productsEmbedded": 50,
+    "bundlesEmbedded": 10
+  }
+}
 ```
 
-### Nhận message
+---
 
-Khi admin update trạng thái đơn hàng, user sẽ nhận:
+## 9. WebSocket — Realtime
+
+### Kết nối (SockJS + STOMP)
+
+```javascript
+// Dùng sockjs-client + stompjs
+const socket = new SockJS('http://localhost:8080/ws');
+const stompClient = Stomp.over(socket);
+
+stompClient.connect({}, function(frame) {
+  // Subscribe order status của user hiện tại
+  stompClient.subscribe('/user/{username}/queue/order-status', function(message) {
+    console.log('Order update:', message.body);
+  });
+});
+```
+
+### Subscribe Channels
+
+| Channel | Mô tả |
+|---|---|
+| `/user/{username}/queue/order-status` | Nhận thông báo cập nhật trạng thái đơn hàng |
+| `/topic/...` | Broadcast toàn bộ (chưa dùng) |
+
+> `{username}` là username của user đang đăng nhập.
+
+### Message nhận được
+
+Khi admin update trạng thái đơn hàng, user sẽ nhận message dạng:
 
 ```
 Order #1 status updated to PROCESSING
@@ -1475,93 +1933,97 @@ Order #1 status updated to PROCESSING
 
 ---
 
-## 📌 Tổng hợp nhanh — Tất cả Endpoints
+## 10. Tổng hợp nhanh — Tất cả Endpoints
 
-| # | Method | URL | Auth | Mô tả |
-|---|---|---|---|---|
+| # | Method | URL | Auth | Role | Mô tả |
+|---|---|---|---|---|---|
 | **Auth** |
-| 1 | POST | `/auth/login` | 🔓 | Đăng nhập |
-| 2 | POST | `/auth/refresh-token` | 🔓 | Refresh token |
-| 3 | POST | `/auth/logout` | 🔐 | Đăng xuất |
-| 4 | POST | `/auth/forgot-password` | 🔓 | Quên mật khẩu |
-| 5 | POST | `/auth/reset-password` | 🔓 | Đặt lại mật khẩu |
-| 6 | POST | `/auth/change-password` | 🔐 | Đổi mật khẩu |
-| 7 | POST | `/auth/verify-otp` | 🔓 | Xác thực OTP |
-| 8 | POST | `/auth/resend-otp` | 🔓 | Gửi lại OTP |
+| 1 | POST | `/auth/login` | 🔓 | - | Đăng nhập |
+| 2 | POST | `/auth/refresh-token` | 🔓 | - | Refresh token |
+| 3 | POST | `/auth/logout` | 🔐 | Any | Đăng xuất |
+| 4 | POST | `/auth/forgot-password` | 🔓 | - | Gửi token reset qua email |
+| 5 | POST | `/auth/reset-password` | 🔓 | - | Đặt lại mật khẩu |
+| 6 | POST | `/auth/change-password` | 🔐 | Any | Đổi mật khẩu |
+| 7 | POST | `/auth/verify-otp` | 🔓 | - | Xác thực OTP |
+| 8 | POST | `/auth/resend-otp` | 🔓 | - | Gửi lại OTP |
 | **User** |
-| 9 | POST | `/user/register` | 🔓 | Đăng ký |
-| 10 | GET | `/user` | 🔐 | Danh sách users |
-| 11 | GET | `/user/{id}` | 🔐 | Chi tiết user |
-| 12 | PUT | `/user/{id}` | 🔐 | Cập nhật user |
-| 13 | DELETE | `/user/{id}` | 🔐 | Xóa user |
+| 9 | POST | `/user/register` | 🔓 | - | Đăng ký |
+| 10 | GET | `/user` | 🔐 | ADMIN | Danh sách users |
+| 11 | GET | `/user/{id}` | 🔐 | Any | Chi tiết user |
+| 12 | PUT | `/user/{id}` | 🔐 | Any | Cập nhật user |
+| 13 | DELETE | `/user/{id}` | 🔐 | ADMIN | Xóa user |
 | **Role** |
-| 14 | POST | `/role` | 🔐 | Tạo role |
-| 15 | GET | `/role` | 🔐 | Tất cả roles |
-| 16 | GET | `/role/{id}` | 🔐 | Chi tiết role |
-| 17 | PUT | `/role?id={id}` | 🔐 | Cập nhật role |
-| 18 | DELETE | `/role?id={id}` | 🔐 | Xóa role |
+| 14 | POST | `/role` | 🔐 | ADMIN | Tạo role |
+| 15 | GET | `/role` | 🔐 | Any | Tất cả roles |
+| 16 | GET | `/role/{id}` | 🔐 | Any | Chi tiết role |
+| 17 | PUT | `/role?id={id}` | 🔐 | ADMIN | Cập nhật role |
+| 18 | DELETE | `/role?id={id}` | 🔐 | ADMIN | Xóa role |
 | **Address** |
-| 19 | POST | `/addresses` | 🔐 | Tạo địa chỉ |
-| 20 | GET | `/addresses` | 🔐 | Danh sách địa chỉ |
-| 21 | GET | `/addresses/{id}` | 🔐 | Chi tiết địa chỉ |
-| 22 | PUT | `/addresses/{id}` | 🔐 | Cập nhật địa chỉ |
-| 23 | DELETE | `/addresses/{id}` | 🔐 | Xóa địa chỉ |
-| 24 | PUT | `/addresses/{id}/default` | 🔐 | Đặt mặc định |
+| 19 | POST | `/addresses` | 🔐 | Any | Tạo địa chỉ |
+| 20 | GET | `/addresses` | 🔐 | Any | Danh sách địa chỉ của tôi |
+| 21 | GET | `/addresses/{id}` | 🔐 | Any | Chi tiết địa chỉ |
+| 22 | PUT | `/addresses/{id}` | 🔐 | Any | Cập nhật địa chỉ |
+| 23 | DELETE | `/addresses/{id}` | 🔐 | Any | Xóa địa chỉ |
+| 24 | PUT | `/addresses/{id}/default` | 🔐 | Any | Đặt mặc định |
 | **Category** |
-| 25 | GET | `/categories` | 🔓 | Tất cả danh mục |
-| 26 | GET | `/categories/{id}` | 🔓 | Chi tiết danh mục |
-| 27 | POST | `/categories` | 🔐 | Tạo danh mục |
-| 28 | PUT | `/categories/{id}` | 🔐 | Cập nhật danh mục |
-| 29 | DELETE | `/categories/{id}` | 🔐 | Xóa danh mục |
+| 25 | GET | `/categories` | 🔓 | - | Tất cả danh mục |
+| 26 | GET | `/categories/{id}` | 🔓 | - | Chi tiết danh mục |
+| 27 | POST | `/categories` | 🔐 | Any | Tạo danh mục |
+| 28 | PUT | `/categories/{id}` | 🔐 | Any | Cập nhật danh mục |
+| 29 | DELETE | `/categories/{id}` | 🔐 | Any | Xóa danh mục |
 | **Product** |
-| 30 | GET | `/products` | 🔓 | Danh sách sản phẩm |
-| 31 | GET | `/products/{id}` | 🔓 | Chi tiết sản phẩm |
-| 32 | POST | `/products/register` | 🔐 | Tạo sản phẩm |
-| 33 | PUT | `/products/{id}` | 🔐 | Cập nhật sản phẩm |
-| 34 | DELETE | `/products/{id}` | 🔐 | Xóa sản phẩm |
+| 30 | GET | `/products` | 🔓 | - | Danh sách sản phẩm |
+| 31 | GET | `/products/{id}` | 🔓 | - | Chi tiết sản phẩm |
+| 32 | POST | `/products/register` | 🔐 | ADMIN | Tạo sản phẩm |
+| 33 | PUT | `/products/{id}` | 🔐 | ADMIN | Cập nhật sản phẩm |
+| 34 | DELETE | `/products/{id}` | 🔐 | ADMIN | Xóa sản phẩm |
 | **Bundle** |
-| 35 | GET | `/bundles` | 🔓 | Danh sách combo |
-| 36 | GET | `/bundles/{id}` | 🔓 | Chi tiết combo |
-| 37 | POST | `/bundles` | 🔐 | Tạo combo |
-| 38 | PUT | `/bundles/{id}` | 🔐 | Cập nhật combo |
-| 39 | DELETE | `/bundles/{id}` | 🔐 | Xóa combo |
+| 35 | GET | `/bundles` | 🔓 | - | Danh sách combo |
+| 36 | GET | `/bundles/{id}` | 🔓 | - | Chi tiết combo |
+| 37 | POST | `/bundles` | 🔐 | Any | Tạo combo |
+| 38 | PUT | `/bundles/{id}` | 🔐 | Any | Cập nhật combo |
+| 39 | DELETE | `/bundles/{id}` | 🔐 | Any | Xóa combo |
 | **Cart** |
-| 40 | GET | `/cart` | 🔐 | Lấy giỏ hàng |
-| 41 | POST | `/cart/items` | 🔐 | Thêm item |
-| 42 | PUT | `/cart/items/{id}?quantity=N` | 🔐 | Cập nhật số lượng |
-| 43 | DELETE | `/cart/items/{id}` | 🔐 | Xóa item |
-| 44 | DELETE | `/cart` | 🔐 | Xóa giỏ hàng |
+| 40 | GET | `/cart` | 🔐 | Any | Lấy giỏ hàng |
+| 41 | POST | `/cart/items` | 🔐 | Any | Thêm item |
+| 42 | PUT | `/cart/items/{id}?quantity=N` | 🔐 | Any | Cập nhật số lượng |
+| 43 | DELETE | `/cart/items/{id}` | 🔐 | Any | Xóa item |
+| 44 | DELETE | `/cart` | 🔐 | Any | Xóa giỏ hàng |
 | **Order** |
-| 45 | POST | `/orders` | 🔐 | Tạo đơn hàng |
-| 46 | GET | `/orders` | 🔐 | Đơn hàng của tôi |
-| 47 | GET | `/orders/{id}` | 🔐 | Chi tiết đơn |
-| 48 | PUT | `/orders/{id}/cancel` | 🔐 | Hủy đơn |
-| 49 | PUT | `/orders/{id}/status?status=X` | 🔐 | Cập nhật trạng thái |
+| 45 | POST | `/orders` | 🔐 | Any | Tạo đơn hàng |
+| 46 | GET | `/orders` | 🔐 | Any | Đơn hàng của tôi |
+| 47 | GET | `/orders/{id}` | 🔐 | Any | Chi tiết đơn |
+| 48 | PUT | `/orders/{id}/cancel` | 🔐 | Any | Hủy đơn |
+| 49 | PUT | `/orders/{id}/status?status=X` | 🔐 | ADMIN | Cập nhật trạng thái |
 | **Payment** |
-| 50 | POST | `/payments/create` | 🔐 | Tạo thanh toán |
-| 51 | GET | `/payments/vnpay-callback` | 🔓 | VNPay callback |
-| 52 | GET | `/payments/{orderId}` | 🔐 | Thanh toán theo order |
+| 50 | POST | `/payments/create` | 🔐 | Any | Tạo thanh toán |
+| 51 | GET | `/payments/vnpay-callback` | 🔓 | - | VNPay callback (do VNPay gọi) |
+| 52 | GET | `/payments/{orderId}` | 🔐 | Any | Thanh toán theo order |
 | **Discount** |
-| 53 | POST | `/discounts` | 🔐 | Tạo mã giảm giá |
-| 54 | GET | `/discounts` | 🔐 | Tất cả mã |
-| 55 | GET | `/discounts/{id}` | 🔐 | Chi tiết mã |
-| 56 | PUT | `/discounts/{id}` | 🔐 | Cập nhật mã |
-| 57 | DELETE | `/discounts/{id}` | 🔐 | Xóa mã |
-| 58 | POST | `/discounts/validate?code=X` | 🔐 | Kiểm tra mã |
+| 53 | POST | `/discounts` | 🔐 | ADMIN | Tạo mã giảm giá |
+| 54 | GET | `/discounts` | 🔐 | ADMIN | Tất cả mã |
+| 55 | GET | `/discounts/{id}` | 🔐 | Any | Chi tiết mã |
+| 56 | PUT | `/discounts/{id}` | 🔐 | ADMIN | Cập nhật mã |
+| 57 | DELETE | `/discounts/{id}` | 🔐 | ADMIN | Xóa mã |
+| 58 | POST | `/discounts/validate?code=X` | 🔐 | Any | Kiểm tra mã (query param) |
 | **Blog** |
-| 59 | GET | `/blog-topics` | 🔓 | Tất cả chủ đề |
-| 60 | POST | `/blog-topics` | 🔐 | Tạo chủ đề |
-| 61 | PUT | `/blog-topics/{id}` | 🔐 | Cập nhật chủ đề |
-| 62 | DELETE | `/blog-topics/{id}` | 🔐 | Xóa chủ đề |
-| 63 | GET | `/blogs` | 🔓 | Danh sách bài viết |
-| 64 | GET | `/blogs/{id}` | 🔓 | Chi tiết bài viết |
-| 65 | POST | `/blogs` | 🔐 | Tạo bài viết |
-| 66 | PUT | `/blogs/{id}` | 🔐 | Cập nhật bài viết |
-| 67 | DELETE | `/blogs/{id}` | 🔐 | Xóa bài viết |
+| 59 | GET | `/blog-topics` | 🔓 | - | Tất cả chủ đề |
+| 60 | POST | `/blog-topics` | 🔐 | Any | Tạo chủ đề |
+| 61 | PUT | `/blog-topics/{id}` | 🔐 | Any | Cập nhật chủ đề |
+| 62 | DELETE | `/blog-topics/{id}` | 🔐 | Any | Xóa chủ đề |
+| 63 | GET | `/blogs` | 🔓 | - | Danh sách bài viết |
+| 64 | GET | `/blogs/{id}` | 🔓 | - | Chi tiết bài viết |
+| 65 | POST | `/blogs` | 🔐 | Any | Tạo bài viết |
+| 66 | PUT | `/blogs/{id}` | 🔐 | Any | Cập nhật bài viết |
+| 67 | DELETE | `/blogs/{id}` | 🔐 | Any | Xóa bài viết |
 | **Review** |
-| 68 | GET | `/products/{id}/reviews` | 🔓 | Đánh giá sản phẩm |
-| 69 | POST | `/products/{id}/reviews` | 🔐 | Tạo đánh giá |
-| 70 | PUT | `/reviews/{id}` | 🔐 | Sửa đánh giá |
-| 71 | DELETE | `/reviews/{id}` | 🔐 | Xóa đánh giá |
+| 68 | GET | `/products/{id}/reviews` | 🔓 | - | Đánh giá sản phẩm |
+| 69 | POST | `/products/{id}/reviews` | 🔐 | Any | Tạo đánh giá |
+| 70 | PUT | `/reviews/{id}` | 🔐 | Any | Sửa đánh giá (owner) |
+| 71 | DELETE | `/reviews/{id}` | 🔐 | Any | Xóa đánh giá (owner) |
+| **AI Chatbot** |
+| 72 | POST | `/chatbot/chat` | 🔓 | - | Chat với AI tư vấn |
+| 73 | GET | `/chatbot/history/{sessionId}` | 🔓 | - | Lịch sử chat |
+| 74 | POST | `/chatbot/embeddings/sync` | 🔐 | ADMIN | Đồng bộ embeddings |
 
-> 🔓 = Public (không cần token) | 🔐 = Cần Bearer Token
+> 🔓 = Public (không cần token) | 🔐 = Cần Bearer Token | ADMIN = Cần role ADMIN | Any = Bất kỳ authenticated user
