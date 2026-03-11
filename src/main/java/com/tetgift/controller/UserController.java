@@ -2,7 +2,6 @@ package com.tetgift.controller;
 
 import com.tetgift.dto.request.UserRequest;
 import com.tetgift.dto.request.UserUpdateRequest;
-import com.tetgift.dto.response.ApiResponse;
 import com.tetgift.dto.response.PageResponse;
 import com.tetgift.dto.response.ResponseData;
 import com.tetgift.dto.response.UserResponse;
@@ -14,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,6 +40,7 @@ public class UserController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get All Users", description = "Retrieve a paginated list of all users")
     public ResponseEntity<ResponseData<PageResponse<UserResponse>>> getAllUser(@RequestParam int page,
                                                                                @RequestParam int size,
@@ -67,6 +68,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete User", description = "Delete a user by their ID")
     public ResponseEntity<ResponseData<String>> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
