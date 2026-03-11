@@ -12,24 +12,33 @@ import com.tetgift.model.entity.ProductImageEntity;
 import com.tetgift.repository.jpa.CategoryRepository;
 import com.tetgift.repository.jpa.ProductRepository;
 import com.tetgift.service.ProductService;
+import com.tetgift.service.ai.EmbeddingService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
     private final CategoryRepository categoryRepository;
+
+    @Autowired(required = false)
+    private EmbeddingService embeddingService;
 
     @Override
     public ProductResponse findProductById(Long id) {
@@ -74,6 +83,10 @@ public class ProductServiceImpl implements ProductService {
         }
 
         ProductEntity saved = productRepository.save(product);
+
+        // Auto-sync embedding to vector store for AI chatbot
+        syncProductEmbedding(saved);
+
         return saved.getId();
     }
 
@@ -114,6 +127,10 @@ public class ProductServiceImpl implements ProductService {
         }
 
         ProductEntity updated = productRepository.save(product);
+
+        // Auto-sync embedding to vector store for AI chatbot
+        syncProductEmbedding(updated);
+
         return updated.getId();
     }
 
@@ -130,6 +147,21 @@ public class ProductServiceImpl implements ProductService {
         // Soft delete
         product.setActive(false);
         productRepository.save(product);
+
+        // Remove embedding from vector store after commit
+        if (embeddingService != null && TransactionSynchronizationManager.isSynchronizationActive()) {
+            final Long productId = id;
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        embeddingService.removeProductEmbedding(productId);
+                    } catch (Exception e) {
+                        log.warn("Failed to remove product embedding for ID {}: {}", productId, e.getMessage());
+                    }
+                }
+            });
+        }
     }
 
     @Override
@@ -149,5 +181,25 @@ public class ProductServiceImpl implements ProductService {
                 .totalItems(products.getTotalElements())
                 .totalPages(products.getTotalPages())
                 .build();
+    }
+
+    /**
+     * Schedule product embedding sync to run AFTER the current transaction commits.
+     * This prevents embedding failures from rolling back the product save.
+     */
+    private void syncProductEmbedding(ProductEntity product) {
+        if (embeddingService != null && TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        embeddingService.embedProduct(product);
+                        log.info("Synced embedding for product ID: {}", product.getId());
+                    } catch (Exception e) {
+                        log.warn("Failed to sync product embedding for ID {}: {}", product.getId(), e.getMessage());
+                    }
+                }
+            });
+        }
     }
 }

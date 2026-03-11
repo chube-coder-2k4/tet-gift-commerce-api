@@ -12,23 +12,32 @@ import com.tetgift.model.entity.ProductEntity;
 import com.tetgift.repository.jpa.BundleRepository;
 import com.tetgift.repository.jpa.ProductRepository;
 import com.tetgift.service.BundleService;
+import com.tetgift.service.ai.EmbeddingService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class BundleServiceImpl implements BundleService {
 
     private final BundleRepository bundleRepository;
     private final ProductRepository productRepository;
+
+    @Autowired(required = false)
+    private EmbeddingService embeddingService;
 
     @Override
     @Transactional
@@ -56,6 +65,10 @@ public class BundleServiceImpl implements BundleService {
         }
 
         BundleEntity saved = bundleRepository.save(bundle);
+
+        // Auto-sync embedding to vector store for AI chatbot
+        syncBundleEmbedding(saved);
+
         return saved.getId();
     }
 
@@ -113,6 +126,10 @@ public class BundleServiceImpl implements BundleService {
         }
 
         BundleEntity updated = bundleRepository.save(bundle);
+
+        // Auto-sync embedding to vector store for AI chatbot
+        syncBundleEmbedding(updated);
+
         return updated.getId();
     }
 
@@ -123,6 +140,41 @@ public class BundleServiceImpl implements BundleService {
                 .orElseThrow(() -> new ResourceNotFoundException("Bundle not found: " + id));
         bundle.setActive(false);
         bundleRepository.save(bundle);
+
+        // Remove embedding from vector store after commit
+        if (embeddingService != null && TransactionSynchronizationManager.isSynchronizationActive()) {
+            final Long bundleId = id;
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        embeddingService.removeBundleEmbedding(bundleId);
+                    } catch (Exception e) {
+                        log.warn("Failed to remove bundle embedding for ID {}: {}", bundleId, e.getMessage());
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * Schedule bundle embedding sync to run AFTER the current transaction commits.
+     * This prevents embedding failures from rolling back the bundle save.
+     */
+    private void syncBundleEmbedding(BundleEntity bundle) {
+        if (embeddingService != null && TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        embeddingService.embedBundle(bundle);
+                        log.info("Synced embedding for bundle ID: {}", bundle.getId());
+                    } catch (Exception e) {
+                        log.warn("Failed to sync bundle embedding for ID {}: {}", bundle.getId(), e.getMessage());
+                    }
+                }
+            });
+        }
     }
 
     private BundleResponse toResponse(BundleEntity bundle) {

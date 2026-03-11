@@ -13,8 +13,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Service for managing product/bundle embeddings in pgvector
@@ -30,15 +32,29 @@ public class EmbeddingService {
     private final BundleRepository bundleRepository;
 
     /**
-     * Generate and store embedding for a product
+     * Generate a deterministic UUID from a string key (e.g. "PRODUCT_11").
+     * pgvector requires document IDs to be valid UUIDs.
      */
-    @Transactional
+    private String toUUID(String key) {
+        return UUID.nameUUIDFromBytes(key.getBytes(StandardCharsets.UTF_8)).toString();
+    }
+
+    /**
+     * Generate and store embedding for a product.
+     * NOT @Transactional — called within saveProduct's transaction,
+     * failures here must not roll back the product save.
+     */
     public void embedProduct(ProductEntity product) {
         log.info("Generating embedding for product: {}", product.getName());
 
+        // Remove old embedding first (if exists)
+        removeProductEmbedding(product.getId());
+
         String embeddingText = buildProductEmbeddingText(product);
+        String documentId = toUUID("PRODUCT_" + product.getId());
 
         Document document = new Document(
+            documentId,
             embeddingText,
             Map.of(
                 "type", "PRODUCT",
@@ -55,15 +71,20 @@ public class EmbeddingService {
     }
 
     /**
-     * Generate and store embedding for a bundle
+     * Generate and store embedding for a bundle.
+     * NOT @Transactional — same reason as embedProduct.
      */
-    @Transactional
     public void embedBundle(BundleEntity bundle) {
         log.info("Generating embedding for bundle: {}", bundle.getName());
 
+        // Remove old embedding first (if exists)
+        removeBundleEmbedding(bundle.getId());
+
         String embeddingText = buildBundleEmbeddingText(bundle);
+        String documentId = toUUID("BUNDLE_" + bundle.getId());
 
         Document document = new Document(
+            documentId,
             embeddingText,
             Map.of(
                 "type", "BUNDLE",
@@ -90,6 +111,7 @@ public class EmbeddingService {
 
         List<Document> documents = products.stream()
             .map(product -> new Document(
+                toUUID("PRODUCT_" + product.getId()),
                 buildProductEmbeddingText(product),
                 Map.of(
                     "type", "PRODUCT",
@@ -123,6 +145,7 @@ public class EmbeddingService {
 
         List<Document> documents = bundles.stream()
             .map(bundle -> new Document(
+                toUUID("BUNDLE_" + bundle.getId()),
                 buildBundleEmbeddingText(bundle),
                 Map.of(
                     "type", "BUNDLE",
@@ -139,6 +162,32 @@ public class EmbeddingService {
         }
 
         return documents.size();
+    }
+
+    /**
+     * Remove embedding for a product from vector store
+     */
+    public void removeProductEmbedding(Long productId) {
+        try {
+            String documentId = toUUID("PRODUCT_" + productId);
+            vectorStore.delete(List.of(documentId));
+            log.info("Removed embedding for product ID: {}", productId);
+        } catch (Exception e) {
+            log.warn("Failed to remove embedding for product ID {}: {}", productId, e.getMessage());
+        }
+    }
+
+    /**
+     * Remove embedding for a bundle from vector store
+     */
+    public void removeBundleEmbedding(Long bundleId) {
+        try {
+            String documentId = toUUID("BUNDLE_" + bundleId);
+            vectorStore.delete(List.of(documentId));
+            log.info("Removed embedding for bundle ID: {}", bundleId);
+        } catch (Exception e) {
+            log.warn("Failed to remove embedding for bundle ID {}: {}", bundleId, e.getMessage());
+        }
     }
 
     /**

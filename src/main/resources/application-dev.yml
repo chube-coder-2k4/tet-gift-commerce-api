@@ -78,7 +78,7 @@ spring:
         transport: rest
         chat:
           options:
-            model: gemini-2.5-flash-lite
+            model: gemma-3-4b-it
             temperature: 0.7
     transformers:
       embedding:
