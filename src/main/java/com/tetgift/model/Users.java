@@ -1,6 +1,5 @@
 package com.tetgift.model;
 
-import com.tetgift.enums.LoginType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -9,6 +8,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -23,24 +23,30 @@ public class Users extends BaseEntity<Long> implements UserDetails {
     private String password;
     private String phone;
     private String username;
+
+    @Builder.Default
     private boolean isVerify = false;
+
+    @Builder.Default
     private boolean isActive = true;
+
+    @Builder.Default
     private boolean isLocked = false;
+
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "user")
+    @Builder.Default
     private Set<Address> addresses = new HashSet<>();
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id"))
-    private Set<Role> roles = new HashSet<>();
-
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id")
+    private Role role;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return roles.stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
-                .toList();
+        if (role == null) {
+            return List.of();
+        }
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.getName()));
     }
 
     @Override
@@ -52,7 +58,6 @@ public class Users extends BaseEntity<Long> implements UserDetails {
     public String getUsername() {
         return username;
     }
-
 
     @Override
     public boolean isAccountNonExpired() {
