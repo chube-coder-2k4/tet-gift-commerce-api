@@ -18,10 +18,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     private final UserRepository userRepository;
     private final JwtService jwtService;
@@ -32,24 +32,22 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
-                                        HttpServletResponse response,
-                                        Authentication authentication)
+            HttpServletResponse response,
+            Authentication authentication)
             throws IOException {
 
         try {
             OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
             String email = oAuth2User.getAttribute("email");
 
-
             if (email == null || email.isEmpty()) {
                 redirectToError(request, response, "email_missing");
                 return;
             }
-            Thread.sleep(100);
 
+            // Find existing user or create new one
             Users user = userRepository.findByEmail(email)
                     .orElseGet(() -> createUserFromOAuth2(oAuth2User));
-
 
             String jwtToken = jwtService.generateAccessToken(user);
 
@@ -69,6 +67,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
             getRedirectStrategy().sendRedirect(request, response, targetUrl);
         } catch (Exception e) {
+            log.error("OAuth2 login error: {}", e.getMessage(), e);
             redirectToError(request, response, "server_error");
         }
     }
@@ -78,22 +77,28 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String name = oAuth2User.getAttribute("name");
         String givenName = oAuth2User.getAttribute("given_name");
         String familyName = oAuth2User.getAttribute("family_name");
-        String fullName = name != null ? name :
-                (givenName != null && familyName != null ?
-                        givenName + " " + familyName : email);
-        Set<Role> role = roleRepository.findByName("USER");
+
+        String fullName = name != null ? name
+                : (givenName != null && familyName != null ? givenName + " " + familyName : email);
+
+        // Set default role for OAuth2 users
+        Role userRole = roleRepository.findByName("USER").orElse(null);
+
         Users newUser = Users.builder()
                 .email(email)
                 .fullName(fullName)
                 .username(email != null ? email.split("@")[0] : "unknown")
-                .roles(role)
+                .role(userRole)
+                .isVerify(true) // OAuth2 users are auto-verified
+                .isActive(true)
                 .build();
+
         return userRepository.save(newUser);
     }
 
     private void redirectToError(HttpServletRequest request,
-                                 HttpServletResponse response,
-                                 String errorCode) throws IOException {
+            HttpServletResponse response,
+            String errorCode) throws IOException {
         String errorUrl = frontendUrl + "/login?error=" + errorCode;
         getRedirectStrategy().sendRedirect(request, response, errorUrl);
     }
