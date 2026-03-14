@@ -1,0 +1,177 @@
+﻿mvn : WARNING: A restricted 
+method in java.lang.System 
+has been called
+At line:1 char:47
++ ... d 13068 -Force; 
+Start-Sleep 2; mvn 
+spring-boot:run > 
+backend.log 2>&1
++                            
+        ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (WARNING  
+  : A rest...has been call   
+ ed:String) [], RemoteExc    
+eption
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+WARNING: 
+java.lang.System::load has 
+been called by org.fusesource
+.jansi.internal.JansiLoader 
+in an unnamed module (file:/D
+:/Downloads/apache-maven-3.9.
+9-bin/apache-maven-3.9.9/lib/
+jansi-2.4.1.jar)
+WARNING: Use --enable-native-
+access=ALL-UNNAMED to avoid 
+a warning for callers in 
+this module
+WARNING: Restricted methods 
+will be blocked in a future 
+release unless native access 
+is enabled
+
+WARNING: A terminally 
+deprecated method in 
+sun.misc.Unsafe has been 
+called
+WARNING: sun.misc.Unsafe::obj
+ectFieldOffset has been 
+called by com.google.common.u
+til.concurrent.AbstractFuture
+$UnsafeAtomicHelper (file:/D:
+/Downloads/apache-maven-3.9.9
+-bin/apache-maven-3.9.9/lib/g
+uava-33.2.1-jre.jar)
+WARNING: Please consider 
+reporting this to the 
+maintainers of class com.goog
+le.common.util.concurrent.Abs
+tractFuture$UnsafeAtomicHelpe
+r
+WARNING: sun.misc.Unsafe::obj
+ectFieldOffset will be 
+removed in a future release
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------------< com.tetgift:tet-gift >------------------------
+[INFO] Building tet-gift-commerce-api 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.5.9:run (default-cli) > test-compile @ tet-gift >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ tet-gift ---
+[INFO] Copying 12 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ tet-gift ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ tet-gift ---
+[INFO] skip non existing resourceDirectory D:\tet-api-fullstack\tet-gift-commerce-api\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ tet-gift ---
+[INFO] Recompiling the module because of added or removed source files.
+[INFO] Compiling 1 source file with javac [debug parameters release 21] to target\test-classes
+[INFO] 
+[INFO] <<< spring-boot:3.5.9:run (default-cli) < test-compile @ tet-gift <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.5.9:run (default-cli) @ tet-gift ---
+[INFO] Attaching agents: []
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????
+:: Meo Meo Nyan Cat :: Running Spring Boot 3.5.9 :: \÷/
+
+2026-03-14T14:30:25.560+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] c.tetgift.TetGiftCommerceApiApplication  : Starting TetGiftCommerceApiApplication using Java 24.0.1 with PID 13380 (D:\tet-api-fullstack\tet-gift-commerce-api\target\classes started by Admin in D:\tet-api-fullstack\tet-gift-commerce-api)
+2026-03-14T14:30:25.561+07:00 DEBUG 13380 --- [commerce-gateway-development] [  restartedMain] c.tetgift.TetGiftCommerceApiApplication  : Running with Spring Boot v3.5.9, Spring v6.2.15
+2026-03-14T14:30:25.561+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] c.tetgift.TetGiftCommerceApiApplication  : The following 1 profile is active: "dev"
+2026-03-14T14:30:25.594+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2026-03-14T14:30:25.595+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2026-03-14T14:30:26.233+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-03-14T14:30:26.233+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-03-14T14:30:26.249+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 4 ms. Found 0 Redis repository interfaces.
+2026-03-14T14:30:26.251+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-03-14T14:30:26.251+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-03-14T14:30:26.338+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 83 ms. Found 16 JPA repository interfaces.
+2026-03-14T14:30:26.339+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-03-14T14:30:26.339+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-03-14T14:30:26.344+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 5 ms. Found 2 Redis repository interfaces.
+2026-03-14T14:30:27.163+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-03-14T14:30:27.173+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-03-14T14:30:27.173+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.50]
+2026-03-14T14:30:27.215+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-03-14T14:30:27.215+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1620 ms
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+2026-03-14T14:30:27.402+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-03-14T14:30:27.428+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.39.Final
+2026-03-14T14:30:27.446+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-03-14T14:30:27.614+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-03-14T14:30:27.633+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-03-14T14:30:27.770+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@6b298a0c
+2026-03-14T14:30:27.772+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-03-14T14:30:27.863+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 16.13
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-03-14T14:30:28.836+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-03-14T14:30:29.397+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-03-14T14:30:29.629+07:00 DEBUG 13380 --- [commerce-gateway-development] [  restartedMain] com.tetgift.component.PreFilter          : Filter 'preFilter' configured for use
+2026-03-14T14:30:29.737+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-03-14T14:30:30.028+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] eAuthenticationProviderManagerConfigurer : Global AuthenticationManager configured with AuthenticationProvider bean with name authenticationProvider
+2026-03-14T14:30:30.028+07:00  WARN 13380 --- [commerce-gateway-development] [  restartedMain] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2026-03-14T14:30:30.073+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] com.tetgift.configuration.RedisConfig    : Configuring Redis connection to localhost:6379
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::allocateMemory has been called by io.netty.util.internal.PlatformDependent0$2 (file:/C:/Users/Admin/.m2/repository/io/netty/netty-common/4.1.130.Final/netty-common-4.1.130.Final.jar)
+WARNING: Please consider reporting this to the maintainers of class io.netty.util.internal.PlatformDependent0$2
+WARNING: sun.misc.Unsafe::allocateMemory will be removed in a future release
+2026-03-14T14:30:30.255+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] com.tetgift.configuration.RedisConfig    : Connected to Redis at localhost:6379
+2026-03-14T14:30:30.255+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] com.tetgift.configuration.RedisConfig    : Redis is connected successfully.
+2026-03-14T14:30:30.307+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by com.sun.jna.Native in an unnamed module (file:/C:/Users/Admin/.m2/repository/net/java/dev/jna/jna/5.14.0/jna-5.14.0.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+2026-03-14T14:30:31.126+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] ai.djl.util.Platform                     : Found matching platform from: jar:file:/C:/Users/Admin/.m2/repository/ai/djl/huggingface/tokenizers/0.32.0/tokenizers-0.32.0.jar!/native/lib/tokenizers.properties
+2026-03-14T14:30:31.467+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.s.a.t.TransformersEmbeddingModel       : Model input names: input_ids, attention_mask, token_type_ids
+2026-03-14T14:30:31.468+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.s.a.t.TransformersEmbeddingModel       : Model output names: last_hidden_state
+2026-03-14T14:30:31.619+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.s.a.v.pgvector.PgVectorStore           : Using the vector table name: vector_store. Is empty: false
+2026-03-14T14:30:31.621+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.s.a.v.pgvector.PgVectorStore           : Initializing PGVectorStore schema for table: vector_store in schema: public
+2026-03-14T14:30:31.621+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.s.a.v.pgvector.PgVectorStore           : vectorTableValidationsEnabled false
+2026-03-14T14:30:32.553+07:00  WARN 13380 --- [commerce-gateway-development] [  restartedMain] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-03-14T14:30:32.809+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/api/v1/actuator'
+2026-03-14T14:30:32.939+07:00 DEBUG 13380 --- [commerce-gateway-development] [  restartedMain] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, OAuth2AuthorizationRequestRedirectFilter, OAuth2LoginAuthenticationFilter, PreFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2026-03-14T14:30:33.469+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
+2026-03-14T14:30:33.470+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@5b2e571c]]
+2026-03-14T14:30:33.470+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
+2026-03-14T14:30:33.483+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-03-14T14:30:33.492+07:00  INFO 13380 --- [commerce-gateway-development] [  restartedMain] c.tetgift.TetGiftCommerceApiApplication  : Started TetGiftCommerceApiApplication in 8.23 seconds (process running for 8.577)
