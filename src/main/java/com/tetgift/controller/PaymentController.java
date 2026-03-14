@@ -3,6 +3,7 @@ package com.tetgift.controller;
 import com.tetgift.dto.request.PaymentRequest;
 import com.tetgift.dto.response.PaymentResponse;
 import com.tetgift.dto.response.ResponseData;
+import com.tetgift.dto.response.VnPayIpnResponse;
 import com.tetgift.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -12,6 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+import java.util.TreeMap;
 
 @RestController
 @RequiredArgsConstructor
@@ -32,10 +36,29 @@ public class PaymentController {
     @GetMapping("/vnpay-callback")
     @Operation(summary = "VNPay callback", description = "Handle VNPay payment callback")
     public ResponseEntity<ResponseData<PaymentResponse>> vnpayCallback(
-            @RequestParam("vnp_TxnRef") String txnRef,
-            @RequestParam("vnp_ResponseCode") String responseCode) {
+            @RequestParam Map<String, String> requestParams) {
+        // Convert request params to a TreeMap to sort keys
+        Map<String, String> vnpParams = new TreeMap<>();
+        for (Map.Entry<String, String> entry : requestParams.entrySet()) {
+            if (entry.getValue() != null && !entry.getValue().isEmpty()) {
+                vnpParams.put(entry.getKey(), entry.getValue());
+            }
+        }
         return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Payment callback processed",
-                paymentService.handleVnPayCallback(txnRef, responseCode)));
+                paymentService.handleVnPayCallback(vnpParams)));
+    }
+
+    @GetMapping("/vnpay-ipn")
+    @Operation(summary = "VNPay IPN", description = "Handle VNPay IPN callback (Server to Server)")
+    public ResponseEntity<VnPayIpnResponse> vnpayIpn(@RequestParam Map<String, String> requestParams) {
+        // Convert request params to a TreeMap to sort keys
+        Map<String, String> vnpParams = new TreeMap<>();
+        for (Map.Entry<String, String> entry : requestParams.entrySet()) {
+            if (entry.getValue() != null && !entry.getValue().isEmpty()) {
+                vnpParams.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return ResponseEntity.ok(paymentService.handleVnPayIpn(vnpParams));
     }
 
     @GetMapping("/{orderId}")
