@@ -12,6 +12,7 @@ import com.tetgift.model.entity.ProductEntity;
 import com.tetgift.repository.jpa.BundleRepository;
 import com.tetgift.repository.jpa.ProductRepository;
 import com.tetgift.service.BundleService;
+import com.tetgift.service.CloudinaryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,44 +20,57 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class BundleServiceImpl implements BundleService {
-
     private final BundleRepository bundleRepository;
     private final ProductRepository productRepository;
+    private final BundleMapper bundleMapper;
+    private final CloudinaryService cloudinaryService;
 
     @Override
     @Transactional
     public Long createBundle(BundleRequest request) {
-        BundleEntity bundle = BundleEntity.builder()
-                .name(request.getName())
-                .price(request.getPrice())
-                .isCustom(request.isCustom())
-                .isActive(true)
-                .build();
+        return createBundleInternal(request, null);
+    }
 
-        if (request.getProducts() != null && !request.getProducts().isEmpty()) {
-            List<BundleProductEntity> bundleProducts = request.getProducts().stream()
-                    .map(bp -> {
-                        ProductEntity product = productRepository.findByIdAndIsActiveTrue(bp.getProductId())
-                                .orElseThrow(
-                                        () -> new ProductNotFoundException("Product not found: " + bp.getProductId()));
-                        return BundleProductEntity.builder()
-                                .bundle(bundle)
-                                .product(product)
-                                .quantity(bp.getQuantity() != null ? bp.getQuantity() : 1)
-                                .build();
-                    }).toList();
-            bundle.setBundleProducts(new ArrayList<>(bundleProducts));
+    @Override
+    @Transactional
+    public Long createBundle(BundleRequest request, MultipartFile image) {
+        return createBundleInternal(request, image);
+    }
+
+    private Long createBundleInternal(BundleRequest request, MultipartFile image) {
+        try {
+            BundleEntity bundle = bundleMapper.toEntity(request);
+            // Calculate total price if not custom
+            if (!request.isCustom()) {
+                List<ProductEntity> products = new ArrayList<>();
+                for (BundleProductEntity bundleProduct : bundle.getBundleProducts()) {
+                    ProductEntity product = productRepository.findByIdAndIsActiveTrue(bundleProduct.getProduct().getId())
+                            .orElseThrow(() -> new ProductNotFoundException("Product not found: " + bundleProduct.getProduct().getId()));
+                    products.add(product);
+                }
+                double totalPrice = products.stream().mapToDouble(ProductEntity::getPrice).sum();
+                bundle.setPrice(totalPrice);
+            }
+
+            if (image != null && !image.isEmpty()) {
+                String imageUrl = cloudinaryService.uploadFile(image);
+                bundle.setImage(imageUrl);
+            }
+
+            BundleEntity saved = bundleRepository.save(bundle);
+            return saved.getId();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to upload image", e);
         }
-
-        BundleEntity saved = bundleRepository.save(bundle);
-        return saved.getId();
     }
 
     @Override
@@ -89,31 +103,48 @@ public class BundleServiceImpl implements BundleService {
     @Override
     @Transactional
     public Long updateBundle(Long id, BundleRequest request) {
-        BundleEntity bundle = bundleRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Bundle not found: " + id));
+        return updateBundleInternal(id, request, null);
+    }
 
-        bundle.setName(request.getName());
-        bundle.setPrice(request.getPrice());
-        bundle.setCustom(request.isCustom());
+    @Override
+    @Transactional
+    public Long updateBundle(Long id, BundleRequest request, MultipartFile image) {
+        return updateBundleInternal(id, request, image);
+    }
 
-        if (request.getProducts() != null) {
-            bundle.getBundleProducts().clear();
-            List<BundleProductEntity> bundleProducts = request.getProducts().stream()
-                    .map(bp -> {
-                        ProductEntity product = productRepository.findByIdAndIsActiveTrue(bp.getProductId())
-                                .orElseThrow(
-                                        () -> new ProductNotFoundException("Product not found: " + bp.getProductId()));
-                        return BundleProductEntity.builder()
-                                .bundle(bundle)
-                                .product(product)
-                                .quantity(bp.getQuantity() != null ? bp.getQuantity() : 1)
-                                .build();
-                    }).toList();
-            bundle.getBundleProducts().addAll(bundleProducts);
+    private Long updateBundleInternal(Long id, BundleRequest request, MultipartFile image) {
+        try {
+            BundleEntity bundle = bundleRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Bundle not found"));
+
+            bundleMapper.updateBundle(bundle, request);
+
+            if (image != null && !image.isEmpty()) {
+                String imageUrl = cloudinaryService.uploadFile(image);
+                bundle.setImage(imageUrl);
+            }
+
+            // Update products logic ...
+            if (request.getProducts() != null) {
+                bundle.getBundleProducts().clear();
+                List<BundleProductEntity> bundleProducts = request.getProducts().stream()
+                        .map(bp -> {
+                            ProductEntity product = productRepository.findByIdAndIsActiveTrue(bp.getProductId())
+                                    .orElseThrow(
+                                            () -> new ProductNotFoundException("Product not found: " + bp.getProductId()));
+                            return BundleProductEntity.builder()
+                                    .bundle(bundle)
+                                    .product(product)
+                                    .quantity(bp.getQuantity() != null ? bp.getQuantity() : 1)
+                                    .build();
+                        }).toList();
+                bundle.getBundleProducts().addAll(bundleProducts);
+            }
+
+            return bundleRepository.save(bundle).getId();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to upload image", e);
         }
-
-        BundleEntity updated = bundleRepository.save(bundle);
-        return updated.getId();
     }
 
     @Override
