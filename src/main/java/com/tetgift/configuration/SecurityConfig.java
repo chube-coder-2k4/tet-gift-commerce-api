@@ -5,6 +5,7 @@ import com.tetgift.component.JwtAuthenticationEntryPoint;
 import com.tetgift.component.OAuth2SuccessHandler;
 import com.tetgift.component.PreFilter;
 import com.tetgift.security.CustomOAuth2UserService;
+import com.tetgift.security.CustomOidcUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,6 +40,7 @@ public class SecurityConfig {
         private final UserDetailsService userDetailsService;
         private final PasswordEncoder passwordEncoder;
         private final CustomOAuth2UserService customOAuth2UserService;
+        private final CustomOidcUserService customOidcUserService;
         private final OAuth2SuccessHandler oAuth2SuccessHandler;
         private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
         private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
@@ -79,7 +81,8 @@ public class SecurityConfig {
                                                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                                 .oauth2Login(oauth2 -> oauth2
                                                 .userInfoEndpoint(userInfo -> userInfo
-                                                                .userService(customOAuth2UserService))
+                                                                .userService(customOAuth2UserService)
+                                                                .oidcUserService(customOidcUserService))
                                                 .successHandler(oAuth2SuccessHandler))
                                 .authenticationProvider(authenticationProvider())
                                 .addFilterBefore(preFilter, UsernamePasswordAuthenticationFilter.class);
@@ -87,12 +90,12 @@ public class SecurityConfig {
                 return http.build();
         }
 
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder);
-        return provider;
-    }
+        @Bean
+        public AuthenticationProvider authenticationProvider() {
+                DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+                provider.setPasswordEncoder(passwordEncoder);
+                return provider;
+        }
 
         @Bean
         public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {

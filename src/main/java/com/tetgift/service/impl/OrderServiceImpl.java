@@ -19,6 +19,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -145,6 +147,24 @@ public class OrderServiceImpl implements OrderService {
                 .pageSize(size)
                 .totalItems(orders.getTotalElements())
                 .totalPages(orders.getTotalPages())
+                .build();
+    }
+
+    @Override
+    public PageResponse<OrderResponse> getAllOrders(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<OrderEntity> orderPage = orderRepository.findAll(pageable);
+
+        List<OrderResponse> responses = orderPage.getContent().stream()
+                .map(this::toResponse)
+                .toList();
+
+        return PageResponse.<OrderResponse>builder()
+                .data(responses)
+                .pageNo(orderPage.getNumber())
+                .pageSize(orderPage.getSize())
+                .totalItems(orderPage.getTotalElements())
+                .totalPages(orderPage.getTotalPages())
                 .build();
     }
 
