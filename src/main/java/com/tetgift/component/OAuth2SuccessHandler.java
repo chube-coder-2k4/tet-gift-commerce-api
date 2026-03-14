@@ -1,8 +1,6 @@
 package com.tetgift.component;
 
-import com.tetgift.model.Role;
 import com.tetgift.model.Users;
-import com.tetgift.repository.jpa.RoleRepository;
 import com.tetgift.repository.jpa.UserRepository;
 import com.tetgift.service.JwtService;
 import jakarta.servlet.http.Cookie;
@@ -18,44 +16,44 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     private final UserRepository userRepository;
     private final JwtService jwtService;
-    private final RoleRepository roleRepository;
 
     @Value("${app.frontend-url:https://shophuypro.store}")
     private String frontendUrl;
 
+    @Value("${app.cookie-secure:true}")
+    private boolean cookieSecure;
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
-                                        HttpServletResponse response,
-                                        Authentication authentication)
+            HttpServletResponse response,
+            Authentication authentication)
             throws IOException {
 
         try {
             OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
             String email = oAuth2User.getAttribute("email");
 
-
             if (email == null || email.isEmpty()) {
                 redirectToError(request, response, "email_missing");
                 return;
             }
-            Thread.sleep(100);
 
+            // User is guaranteed to exist — CustomOAuth2UserService already created it
             Users user = userRepository.findByEmail(email)
-                    .orElseGet(() -> createUserFromOAuth2(oAuth2User));
-
+                    .orElseThrow(() -> new IllegalStateException("OAuth2 user not found after processing: " + email));
 
             String jwtToken = jwtService.generateAccessToken(user);
 
             Cookie cookie = new Cookie("JWT_TOKEN", jwtToken);
             cookie.setHttpOnly(true);
-            cookie.setSecure(false);
+            cookie.setSecure(cookieSecure);
             cookie.setPath("/");
             cookie.setMaxAge(24 * 60 * 60);
             response.addCookie(cookie);
@@ -69,31 +67,15 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
             getRedirectStrategy().sendRedirect(request, response, targetUrl);
         } catch (Exception e) {
+            log.error("OAuth2 login error: {}", e.getMessage(), e);
             redirectToError(request, response, "server_error");
         }
     }
 
-    private Users createUserFromOAuth2(OAuth2User oAuth2User) {
-        String email = oAuth2User.getAttribute("email");
-        String name = oAuth2User.getAttribute("name");
-        String givenName = oAuth2User.getAttribute("given_name");
-        String familyName = oAuth2User.getAttribute("family_name");
-        String fullName = name != null ? name :
-                (givenName != null && familyName != null ?
-                        givenName + " " + familyName : email);
-        Set<Role> role = roleRepository.findByName("USER");
-        Users newUser = Users.builder()
-                .email(email)
-                .fullName(fullName)
-                .username(email != null ? email.split("@")[0] : "unknown")
-                .roles(role)
-                .build();
-        return userRepository.save(newUser);
-    }
 
     private void redirectToError(HttpServletRequest request,
-                                 HttpServletResponse response,
-                                 String errorCode) throws IOException {
+            HttpServletResponse response,
+            String errorCode) throws IOException {
         String errorUrl = frontendUrl + "/login?error=" + errorCode;
         getRedirectStrategy().sendRedirect(request, response, errorUrl);
     }

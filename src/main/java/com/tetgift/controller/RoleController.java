@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +25,7 @@ public class RoleController {
     private final RoleService roleService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create a new role", description = "Create a new role with the provided details")
     public ResponseEntity<ResponseData<RoleResponse>> createRole(@RequestBody @Valid RoleRequest roleRequest) {
         return ResponseEntity
@@ -36,6 +38,7 @@ public class RoleController {
     }
 
     @PutMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update an existing role", description = "Update the details of an existing role")
     public ResponseEntity<ResponseData<RoleResponse>> updateRole(@RequestParam Long id, @RequestBody @Valid RoleRequest roleRequest) {
         return ResponseEntity
@@ -48,6 +51,7 @@ public class RoleController {
     }
 
     @DeleteMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete a role", description = "Delete a role by its ID")
     public ResponseEntity<ResponseData<Void>> deleteRole(@RequestParam Long id) {
         roleService.deleteRole(id);

@@ -1,6 +1,5 @@
 package com.tetgift.service.impl;
 
-
 import com.tetgift.dto.request.ChangePasswordRequest;
 import com.tetgift.dto.request.LoginRequest;
 import com.tetgift.dto.request.ResetPasswordRequest;
@@ -14,6 +13,7 @@ import com.tetgift.model.redismodel.RefreshToken;
 import com.tetgift.repository.jpa.UserRepository;
 import com.tetgift.service.AuthenticationService;
 import com.tetgift.service.JwtService;
+import com.tetgift.service.MailService;
 import com.tetgift.service.RefreshTokenService;
 import com.tetgift.util.AuthenticationUtils;
 import io.micrometer.common.util.StringUtils;
@@ -25,6 +25,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -36,7 +37,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final RefreshTokenService tokenService;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationUtils utils;
-
+    private final MailService mailService;
 
     @Override
     public LoginResponse login(LoginRequest request) {
@@ -44,21 +45,22 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             request.getUsernameOrEmail(),
-                            request.getPassword()
-                    )
-            );
+                            request.getPassword()));
         } catch (BadCredentialsException ex) {
             throw new UnauthorizedException("Invalid username or password");
         }
 
-        var user = userRepository.findByUsername(request.getUsernameOrEmail()).orElseThrow(() -> new UserNotFoundException("User not found"));
+        var user = userRepository.findByUsername(request.getUsernameOrEmail())
+                .orElseGet(() -> userRepository.findByEmail(request.getUsernameOrEmail())
+                        .orElseThrow(() -> new UserNotFoundException("User not found")));
+
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
+
         tokenService.saveRefreshToken(RefreshToken.builder()
                 .token(refreshToken)
                 .usersId(user.getId())
                 .build());
-
 
         return LoginResponse.builder()
                 .accessToken(accessToken)
@@ -72,7 +74,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String token = getRefreshToken(request);
         var user = getUserFromRefreshToken(token);
         validateRefreshToken(token, user);
+
         String accessToken = jwtService.generateAccessToken(user);
+
         return LoginResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(token)
@@ -91,64 +95,70 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public String forgotPassword(String email) {
-        Users user = userRepository.findByEmail(email).orElseThrow(() -> new UserNotFoundException("User not found"));
-        if(!user.isEnabled()) {
+        Users user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        if (!user.isEnabled()) {
             throw new InvalidDataException("User is not enabled");
         }
 
         String resetToken = jwtService.generateResetPasswordToken(user);
-        
-        log.info("Password reset token generated for user: {}", email);
-        log.info("Reset token: {}", resetToken);
+        mailService.sendResetPasswordMail(email, resetToken);
+        log.info("Password reset token sent to email: {}", email);
 
-        return resetToken;
+        return "Password reset token has been sent to your email";
     }
 
     @Override
+    @Transactional
     public String resetPassword(ResetPasswordRequest request) {
-        if(!request.getNewPassword().equals(request.getConfirmPassword())) {
-            throw new InvalidDataException("new.password.confirm.password.not.match");
+        // Validate password match (only once)
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new InvalidDataException("New password and confirm password do not match");
         }
-        
+
         final String username = jwtService.extractUsername(request.getToken(), TokenType.RESET_PASSWORD);
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
-        
+
         if (!jwtService.isTokenValid(request.getToken(), user, TokenType.RESET_PASSWORD)) {
             throw new InvalidDataException("Invalid or expired reset token");
         }
-        if(!request.getNewPassword().equals(request.getConfirmPassword())) {
-            throw new InvalidDataException("New password and confirm password do not match");
-        }
-        
+
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
-        
+
         log.info("Password reset successful for user: {}", username);
         return "Password reset successful";
     }
 
     @Override
+    @Transactional
     public String changePassword(ChangePasswordRequest request) {
         Users user = utils.getCurrentUser();
-        if(user == null) {
+        if (user == null) {
             throw new UnauthorizedException("User not authenticated");
         }
-        if(!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
             throw new InvalidDataException("Old password is incorrect");
         }
-        if(!request.getNewPassword().equals(request.getConfirmPassword())) {
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new InvalidDataException("New password and confirm password do not match");
         }
+
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
+
+        // Invalidate all refresh tokens for this user after password change
+        tokenService.deleteByUserId(user.getId());
+
         return "Change password successful";
     }
 
     private String getRefreshToken(HttpServletRequest request) {
         String token = request.getHeader("x-refresh-token");
         if (StringUtils.isBlank(token)) {
-            throw new InvalidDataException("Invalid refresh token must be not blank");
+            throw new InvalidDataException("Refresh token must not be blank");
         }
         return token;
     }
@@ -164,8 +174,4 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new InvalidDataException("Invalid refresh token");
         }
     }
-
-
-
-
 }

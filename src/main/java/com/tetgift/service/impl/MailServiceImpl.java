@@ -33,7 +33,8 @@ public class MailServiceImpl implements MailService {
             }
             if(files != null) {
                 for (MultipartFile file : files) {
-                    helper.addAttachment(file.getOriginalFilename(), file);
+                    String filename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "attachment";
+                    helper.addAttachment(filename, file);
                 }
             }
             helper.setSubject(subject);
@@ -51,6 +52,19 @@ public class MailServiceImpl implements MailService {
     public String sendOtpMail(String email, String otp) {
         String subject = "Your OTP Code";
         String body = String.format("Your OTP is: %s (valid for 5 minutes)", otp);
+        return sendMail(email, subject, body, null);
+    }
+
+    @Override
+    public String sendResetPasswordMail(String email, String resetToken) {
+        String subject = "Password Reset Request";
+        String body = String.format(
+                "<p>You requested a password reset.</p>" +
+                "<p>Use the following token to reset your password:</p>" +
+                "<p><strong>%s</strong></p>" +
+                "<p>This token is valid for 10 minutes.</p>" +
+                "<p>If you did not request this, please ignore this email.</p>",
+                resetToken);
         return sendMail(email, subject, body, null);
     }
 }

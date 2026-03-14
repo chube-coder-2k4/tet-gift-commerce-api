@@ -1,14 +1,10 @@
 package com.tetgift.dto.response;
 
-import com.tetgift.model.Address;
-import com.tetgift.model.Role;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 
 @Getter
 @Setter
@@ -19,8 +15,7 @@ public class UserResponse {
     private String email;
     private String phone;
     private String username;
-    private Set<Address> addresses = new HashSet<>();
-    private Set<Role> roles = new HashSet<>();
+    private String roleName;
     private Long createdBy;
     private Long updatedBy;
     private LocalDateTime createdAt;
