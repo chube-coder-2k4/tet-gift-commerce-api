@@ -3,6 +3,7 @@ package com.tetgift.service.impl;
 import com.tetgift.configuration.VNPayConfig;
 import com.tetgift.dto.request.PaymentRequest;
 import com.tetgift.dto.response.PaymentResponse;
+import com.tetgift.dto.response.VnPayIpnResponse;
 import com.tetgift.enums.OrderStatus;
 import com.tetgift.enums.PaymentMethod;
 import com.tetgift.enums.PaymentStatus;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -65,7 +67,26 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public PaymentResponse handleVnPayCallback(String transactionId, String responseCode) {
+    public PaymentResponse handleVnPayCallback(Map<String, String> requestParams) {
+        // Verify signature
+        String vnp_SecureHash = requestParams.get("vnp_SecureHash");
+        if (requestParams.containsKey("vnp_SecureHashType")) {
+            requestParams.remove("vnp_SecureHashType");
+        }
+        if (requestParams.containsKey("vnp_SecureHash")) {
+            requestParams.remove("vnp_SecureHash");
+        }
+
+        String signValue = VNPayUtil.hashAllFields(requestParams);
+        String vnp_SecureHash_Check = VNPayUtil.hmacSHA512(vnPayConfig.getHashSecret(), signValue);
+
+        if (!vnp_SecureHash_Check.equals(vnp_SecureHash)) {
+            throw new InvalidDataException("Invalid Signature");
+        }
+
+        String transactionId = requestParams.get("vnp_TxnRef");
+        String responseCode = requestParams.get("vnp_ResponseCode");
+
         Long paymentId;
         try {
             paymentId = Long.parseLong(transactionId);
@@ -77,16 +98,18 @@ public class PaymentServiceImpl implements PaymentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found: " + paymentId));
 
         if ("00".equals(responseCode)) {
-            payment.setStatus(PaymentStatus.SUCCESS);
-            payment.setTransactionId(transactionId);
-            payment.setPaidAt(LocalDateTime.now());
+            // Only update if not already success
+            if (payment.getStatus() != PaymentStatus.SUCCESS) {
+                payment.setStatus(PaymentStatus.SUCCESS);
+                payment.setTransactionId(transactionId);
+                payment.setPaidAt(LocalDateTime.now());
 
-            // Update order status
-            OrderEntity order = payment.getOrder();
-            order.setStatus(OrderStatus.PAID);
-            orderRepository.save(order);
+                OrderEntity order = payment.getOrder();
+                order.setStatus(OrderStatus.PAID);
+                orderRepository.save(order);
+            }
         } else {
-            payment.setStatus(PaymentStatus.FAILED);
+             payment.setStatus(PaymentStatus.FAILED);
         }
 
         PaymentEntity updated = paymentRepository.save(payment);
@@ -99,6 +122,72 @@ public class PaymentServiceImpl implements PaymentService {
         PaymentEntity payment = paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found for order: " + orderId));
         return toResponse(payment, null);
+    }
+
+    @Override
+    @Transactional
+    public VnPayIpnResponse handleVnPayIpn(Map<String, String> requestParams) {
+        // Build checksum hash
+        String vnp_SecureHash = requestParams.get("vnp_SecureHash");
+        if (requestParams.containsKey("vnp_SecureHashType")) {
+            requestParams.remove("vnp_SecureHashType");
+        }
+        if (requestParams.containsKey("vnp_SecureHash")) {
+            requestParams.remove("vnp_SecureHash");
+        }
+
+        // Check checksum
+        String signValue = VNPayUtil.hashAllFields(requestParams);
+        String vnp_SecureHash_Check = VNPayUtil.hmacSHA512(vnPayConfig.getHashSecret(), signValue);
+
+        if (!vnp_SecureHash_Check.equals(vnp_SecureHash)) {
+            return VnPayIpnResponse.builder().rspCode("97").message("Invalid Checksum").build();
+        }
+
+        // Handle payment logic
+        String txnRef = requestParams.get("vnp_TxnRef");
+        String responseCode = requestParams.get("vnp_ResponseCode");
+        String transactionNo = requestParams.get("vnp_TransactionNo");
+        String amount = requestParams.get("vnp_Amount");
+
+        long paymentId;
+        try {
+            paymentId = Long.parseLong(txnRef);
+        } catch (NumberFormatException e) {
+            return VnPayIpnResponse.builder().rspCode("01").message("Order not found").build();
+        }
+
+        PaymentEntity payment = paymentRepository.findById(paymentId).orElse(null);
+        if (payment == null) {
+            return VnPayIpnResponse.builder().rspCode("01").message("Order not found").build();
+        }
+
+        // Check amount if necessary (compare request amount vs saved amount)
+        long vnpAmount = Long.parseLong(amount);
+        long checkAmount = (long) (payment.getAmount().doubleValue() * 100);
+
+        if (vnpAmount != checkAmount) {
+            return VnPayIpnResponse.builder().rspCode("04").message("Invalid Amount").build();
+        }
+
+        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            return VnPayIpnResponse.builder().rspCode("02").message("Order already confirmed").build();
+        }
+
+        if ("00".equals(responseCode)) {
+            payment.setStatus(PaymentStatus.SUCCESS);
+            payment.setTransactionId(transactionNo);
+            payment.setPaidAt(LocalDateTime.now());
+
+            OrderEntity order = payment.getOrder();
+            order.setStatus(OrderStatus.PAID);
+            orderRepository.save(order);
+        } else {
+            payment.setStatus(PaymentStatus.FAILED);
+        }
+        paymentRepository.save(payment);
+
+        return VnPayIpnResponse.builder().rspCode("00").message("Confirm Success").build();
     }
 
     private PaymentResponse toResponse(PaymentEntity payment, String paymentUrl) {
