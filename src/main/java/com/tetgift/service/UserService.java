@@ -10,7 +10,7 @@ import jakarta.mail.MessagingException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 
-public interface UserService {
+public interface    UserService {
 
     UserResponse findByUsername(String username);
 
