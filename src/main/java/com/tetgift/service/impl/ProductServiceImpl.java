@@ -11,6 +11,7 @@ import com.tetgift.model.entity.ProductEntity;
 import com.tetgift.model.entity.ProductImageEntity;
 import com.tetgift.repository.jpa.CategoryRepository;
 import com.tetgift.repository.jpa.ProductRepository;
+import com.tetgift.service.CloudinaryService;
 import com.tetgift.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,7 +20,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +33,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
     private final CategoryRepository categoryRepository;
+    private final CloudinaryService cloudinaryService;
 
     @Override
     public ProductResponse findProductById(Long id) {
@@ -41,80 +45,118 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public Long saveProduct(ProductRequest request) {
-        ProductEntity product = ProductEntity.builder()
-                .name(request.getName())
-                .description(request.getDescription())
-                .price(request.getPrice())
-                .stock(request.getStock() != null ? request.getStock() : 0)
-                .isActive(true)
-                .manufactureDate(request.getManufactureDate())
-                .expDate(request.getExpDate())
-                .build();
+        return saveProductInternal(request, null);
+    }
 
-        // Set category
-        if (request.getCategoryId() != null) {
-            Category category = categoryRepository.findByIdAndIsActiveTrue(request.getCategoryId())
-                    .orElseThrow(() -> new CategoryNotFoundException(
-                            "Category not found with id: " + request.getCategoryId()));
-            product.setCategory(category);
+    @Override
+    @Transactional
+    public Long saveProduct(ProductRequest request, MultipartFile image) {
+        return saveProductInternal(request, image);
+    }
+
+    private Long saveProductInternal(ProductRequest request, MultipartFile image) {
+        try {
+            ProductEntity product = ProductEntity.builder()
+                    .name(request.getName())
+                    .description(request.getDescription())
+                    .price(request.getPrice())
+                    .stock(request.getStock() != null ? request.getStock() : 0)
+                    .isActive(true)
+                    .manufactureDate(request.getManufactureDate())
+                    .expDate(request.getExpDate())
+                    .build();
+
+            // Set category
+            if (request.getCategoryId() != null) {
+                Category category = categoryRepository.findByIdAndIsActiveTrue(request.getCategoryId())
+                        .orElseThrow(() -> new CategoryNotFoundException(
+                                "Category not found with id: " + request.getCategoryId()));
+                product.setCategory(category);
+            }
+
+            // Set images
+            if (request.getImages() != null && !request.getImages().isEmpty()) {
+                List<ProductImageEntity> images = request.getImages().stream()
+                        .map(imgReq -> ProductImageEntity.builder()
+                                .imageUrl(imgReq.getImageUrl())
+                                .imageType(imgReq.getImageType())
+                                .publicId(imgReq.getPublicId())
+                                .isPrimary(imgReq.isPrimary())
+                                .product(product)
+                                .build())
+                        .toList();
+                product.setProductImages(new ArrayList<>(images));
+            }
+
+            if (image != null && !image.isEmpty()) {
+                String imageUrl = cloudinaryService.uploadFile(image);
+                product.setImage(imageUrl);
+            }
+
+            ProductEntity saved = productRepository.save(product);
+            return saved.getId();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to upload image", e);
         }
-
-        // Set images
-        if (request.getImages() != null && !request.getImages().isEmpty()) {
-            List<ProductImageEntity> images = request.getImages().stream()
-                    .map(imgReq -> ProductImageEntity.builder()
-                            .imageUrl(imgReq.getImageUrl())
-                            .imageType(imgReq.getImageType())
-                            .publicId(imgReq.getPublicId())
-                            .isPrimary(imgReq.isPrimary())
-                            .product(product)
-                            .build())
-                    .toList();
-            product.setProductImages(new ArrayList<>(images));
-        }
-
-        ProductEntity saved = productRepository.save(product);
-        return saved.getId();
     }
 
     @Override
     @Transactional
     public Long updateProduct(Long id, ProductRequest request) {
-        ProductEntity product = productRepository.findById(id)
-                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
+        return updateProductInternal(id, request, null);
+    }
 
-        product.setName(request.getName());
-        product.setDescription(request.getDescription());
-        product.setPrice(request.getPrice());
-        product.setStock(request.getStock() != null ? request.getStock() : product.getStock());
-        product.setManufactureDate(request.getManufactureDate());
-        product.setExpDate(request.getExpDate());
+    @Override
+    @Transactional
+    public Long updateProduct(Long id, ProductRequest request, MultipartFile image) {
+        return updateProductInternal(id, request, image);
+    }
 
-        // Update category
-        if (request.getCategoryId() != null) {
-            Category category = categoryRepository.findByIdAndIsActiveTrue(request.getCategoryId())
-                    .orElseThrow(() -> new CategoryNotFoundException(
-                            "Category not found with id: " + request.getCategoryId()));
-            product.setCategory(category);
+    private Long updateProductInternal(Long id, ProductRequest request, MultipartFile image) {
+        try {
+            ProductEntity product = productRepository.findById(id)
+                    .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
+
+            product.setName(request.getName());
+            product.setDescription(request.getDescription());
+            product.setPrice(request.getPrice());
+            product.setStock(request.getStock() != null ? request.getStock() : product.getStock());
+            product.setManufactureDate(request.getManufactureDate());
+            product.setExpDate(request.getExpDate());
+
+            // Update category
+            if (request.getCategoryId() != null) {
+                Category category = categoryRepository.findByIdAndIsActiveTrue(request.getCategoryId())
+                        .orElseThrow(() -> new CategoryNotFoundException(
+                                "Category not found with id: " + request.getCategoryId()));
+                product.setCategory(category);
+            }
+
+            // Update images (replace all)
+            if (request.getImages() != null) {
+                product.getProductImages().clear();
+                List<ProductImageEntity> images = request.getImages().stream()
+                        .map(imgReq -> ProductImageEntity.builder()
+                                .imageUrl(imgReq.getImageUrl())
+                                .imageType(imgReq.getImageType())
+                                .publicId(imgReq.getPublicId())
+                                .isPrimary(imgReq.isPrimary())
+                                .product(product)
+                                .build())
+                        .toList();
+                product.getProductImages().addAll(images);
+            }
+
+            if (image != null && !image.isEmpty()) {
+                String imageUrl = cloudinaryService.uploadFile(image);
+                product.setImage(imageUrl);
+            }
+
+            productRepository.save(product);
+            return product.getId();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to upload image", e);
         }
-
-        // Update images (replace all)
-        if (request.getImages() != null) {
-            product.getProductImages().clear();
-            List<ProductImageEntity> images = request.getImages().stream()
-                    .map(imgReq -> ProductImageEntity.builder()
-                            .imageUrl(imgReq.getImageUrl())
-                            .imageType(imgReq.getImageType())
-                            .publicId(imgReq.getPublicId())
-                            .isPrimary(imgReq.isPrimary())
-                            .product(product)
-                            .build())
-                    .toList();
-            product.getProductImages().addAll(images);
-        }
-
-        ProductEntity updated = productRepository.save(product);
-        return updated.getId();
     }
 
     @Override
