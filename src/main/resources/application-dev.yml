@@ -42,12 +42,6 @@ spring:
             scope: openid,profile,email
             authorization-grant-type: authorization_code
             redirect-uri: "{baseUrl}/login/oauth2/code/google"
-          github:
-            client-id: ${GITHUB_CLIENT_ID}
-            client-secret: ${GITHUB_CLIENT_SECRET}
-            scope: user:email,read:email
-            authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/github"
 #          keycloak:
 #            client-id: ${KEYCLOAK_CLIENT_ID}
 #            client-secret: ${KEYCLOAK_CLIENT_SECRET}
@@ -57,11 +51,6 @@ spring:
         provider:
           google:
             issuer-uri: https://accounts.google.com
-          github:
-            authorization-uri: https://github.com/login/oauth/authorize
-            token-uri: https://github.com/login/oauth/access_token
-            user-info-uri: https://api.github.com/user
-            user-name-attribute: login
 #          keycloak:
 #            issuer-uri: ${KEYCLOAK_ISSUER_URI}
   # Spring AI Configuration for RAG Chatbot
@@ -78,7 +67,7 @@ spring:
         transport: rest
         chat:
           options:
-            model: gemini-2.5-flash-lite
+            model: gemma-3-4b-it
             temperature: 0.7
     transformers:
       embedding:

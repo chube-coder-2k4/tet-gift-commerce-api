@@ -11,6 +11,8 @@ public interface OrderService {
 
     PageResponse<OrderResponse> getMyOrders(int page, int size);
 
+    PageResponse<OrderResponse> getAllOrders(int page, int size);
+
     OrderResponse updateOrderStatus(Long id, String status);
 
     OrderResponse cancelOrder(Long id);
