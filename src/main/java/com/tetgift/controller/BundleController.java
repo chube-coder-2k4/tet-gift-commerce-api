@@ -23,7 +23,7 @@ public class BundleController {
     private final BundleService bundleService;
 
     @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
-    @Operation(summary = "Create bundle", description = "Create a new gift bundle")
+    @Operation(summary = "Create bundle (multipart)", description = "Create a new gift bundle with image")
     public ResponseEntity<ResponseData<Long>> createBundle(
             @RequestPart("request") @Valid BundleRequest request,
             @RequestPart(value = "image", required = false) MultipartFile image) throws java.io.IOException {
@@ -32,6 +32,15 @@ public class BundleController {
                 .body(new ResponseData<>(HttpStatus.CREATED.value(), "Bundle created successfully",
                         bundleService.createBundle(request, image)));
         }
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ResponseData<>(HttpStatus.CREATED.value(), "Bundle created successfully",
+                        bundleService.createBundle(request)));
+    }
+
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Create bundle (JSON)", description = "Create a new gift bundle without image")
+    public ResponseEntity<ResponseData<Long>> createBundleJson(
+            @RequestBody @Valid BundleRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResponseData<>(HttpStatus.CREATED.value(), "Bundle created successfully",
                         bundleService.createBundle(request)));
@@ -56,7 +65,7 @@ public class BundleController {
     }
 
     @PutMapping(value = "/{id}", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
-    @Operation(summary = "Update bundle", description = "Update an existing bundle")
+    @Operation(summary = "Update bundle (multipart)", description = "Update bundle with image")
     public ResponseEntity<ResponseData<Long>> updateBundle(
             @PathVariable Long id,
             @RequestPart("request") @Valid BundleRequest request,
@@ -65,6 +74,15 @@ public class BundleController {
              return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Bundle updated successfully",
                 bundleService.updateBundle(id, request, image)));
         }
+        return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Bundle updated successfully",
+                bundleService.updateBundle(id, request)));
+    }
+
+    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Update bundle (JSON)", description = "Update bundle without image")
+    public ResponseEntity<ResponseData<Long>> updateBundleJson(
+            @PathVariable Long id,
+            @RequestBody @Valid BundleRequest request) {
         return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Bundle updated successfully",
                 bundleService.updateBundle(id, request)));
     }

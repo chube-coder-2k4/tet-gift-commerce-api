@@ -11,6 +11,7 @@ import com.tetgift.exception.InvalidDataException;
 import com.tetgift.exception.ResourceNotFoundException;
 import com.tetgift.model.entity.OrderEntity;
 import com.tetgift.model.entity.PaymentEntity;
+import com.tetgift.repository.jpa.CartRepository;
 import com.tetgift.repository.jpa.OrderRepository;
 import com.tetgift.repository.jpa.PaymentRepository;
 import com.tetgift.service.PaymentService;
@@ -30,6 +31,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
+    private final CartRepository cartRepository;
     private final VNPayConfig vnPayConfig;
 
     @Override
@@ -60,6 +62,9 @@ public class PaymentServiceImpl implements PaymentService {
         String paymentUrl = null;
         if (method == PaymentMethod.VN_PAY) {
             paymentUrl = VNPayUtil.buildPaymentUrl(saved.getId(), saved.getAmount().doubleValue(), vnPayConfig);
+        } else if (method == PaymentMethod.COD) {
+            // COD: clear cart immediately since no online payment needed
+            clearCartForUser(order.getUser().getId());
         }
 
         return toResponse(saved, paymentUrl);
@@ -107,6 +112,9 @@ public class PaymentServiceImpl implements PaymentService {
                 OrderEntity order = payment.getOrder();
                 order.setStatus(OrderStatus.PAID);
                 orderRepository.save(order);
+
+                // VNPay success: clear cart now
+                clearCartForUser(order.getUser().getId());
             }
         } else {
              payment.setStatus(PaymentStatus.FAILED);
@@ -182,6 +190,9 @@ public class PaymentServiceImpl implements PaymentService {
             OrderEntity order = payment.getOrder();
             order.setStatus(OrderStatus.PAID);
             orderRepository.save(order);
+
+            // VNPay IPN success: clear cart now
+            clearCartForUser(order.getUser().getId());
         } else {
             payment.setStatus(PaymentStatus.FAILED);
         }
@@ -201,5 +212,13 @@ public class PaymentServiceImpl implements PaymentService {
                 .paidAt(payment.getPaidAt())
                 .paymentUrl(paymentUrl)
                 .build();
+    }
+
+    private void clearCartForUser(Long userId) {
+        cartRepository.findByUserId(userId).ifPresent(cart -> {
+            cart.getCartItems().clear();
+            cartRepository.save(cart);
+            log.info("Cart cleared for user: {}", userId);
+        });
     }
 }

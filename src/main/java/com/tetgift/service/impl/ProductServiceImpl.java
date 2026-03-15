@@ -89,7 +89,7 @@ public class ProductServiceImpl implements ProductService {
             }
 
             if (image != null && !image.isEmpty()) {
-                String imageUrl = cloudinaryService.uploadFile(image);
+                String imageUrl = cloudinaryService.uploadFile(image, "products");
                 product.setImage(imageUrl);
             }
 
@@ -148,7 +148,7 @@ public class ProductServiceImpl implements ProductService {
             }
 
             if (image != null && !image.isEmpty()) {
-                String imageUrl = cloudinaryService.uploadFile(image);
+                String imageUrl = cloudinaryService.uploadFile(image, "products");
                 product.setImage(imageUrl);
             }
 
