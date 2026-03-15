@@ -34,6 +34,8 @@ public class PaymentServiceImpl implements PaymentService {
     private final CartRepository cartRepository;
     private final VNPayConfig vnPayConfig;
 
+    private static final long MIN_PAYMENT_AMOUNT = 5000; // 5,000 VNĐ
+
     @Override
     @Transactional
     public PaymentResponse createPayment(PaymentRequest request) {
@@ -46,6 +48,41 @@ public class PaymentServiceImpl implements PaymentService {
 
         PaymentMethod method = PaymentMethod.valueOf(request.getMethod().toUpperCase());
 
+        // === Payment amount validation ===
+        long totalAmountLong = order.getTotalAmount().longValue();
+
+        // Case 1: Total = 0 (free order from discount) → auto-success
+        if (totalAmountLong == 0) {
+            PaymentEntity payment = PaymentEntity.builder()
+                    .order(order)
+                    .method(method)
+                    .status(PaymentStatus.SUCCESS)
+                    .amount(order.getTotalAmount())
+                    .paidAt(LocalDateTime.now())
+                    .transactionId("FREE_ORDER_" + order.getId())
+                    .build();
+
+            PaymentEntity saved = paymentRepository.save(payment);
+
+            // Auto-complete order
+            order.setStatus(OrderStatus.PAID);
+            orderRepository.save(order);
+
+            // Clear cart immediately
+            clearCartForUser(order.getUser().getId());
+
+            log.info("Free order auto-completed: orderId={}, userId={}", order.getId(), order.getUser().getId());
+            return toResponse(saved, null);
+        }
+
+        // Case 2: 0 < total < 5000 → reject
+        if (totalAmountLong > 0 && totalAmountLong < MIN_PAYMENT_AMOUNT) {
+            throw new InvalidDataException(
+                    "Tổng đơn hàng phải ít nhất " + MIN_PAYMENT_AMOUNT + " VNĐ. Đơn hàng hiện tại: "
+                            + order.getTotalAmount() + " VNĐ");
+        }
+
+        // Case 3: total >= 5000 → normal payment flow
         PaymentEntity payment = PaymentEntity.builder()
                 .order(order)
                 .method(method)
