@@ -41,32 +41,67 @@ public class CartServiceImpl implements CartService {
     @Transactional
     public CartResponse addItemToCart(CartItemRequest request) {
         CartEntity cart = getOrCreateCart();
+        int quantityToAdd = request.getQuantity() != null ? request.getQuantity() : 1;
+        String itemType = request.getItemType().toUpperCase();
 
-        CartItemEntity item = CartItemEntity.builder()
-                .cart(cart)
-                .itemType(request.getItemType().toUpperCase())
-                .quantity(request.getQuantity() != null ? request.getQuantity() : 1)
-                .build();
-
-        if ("PRODUCT".equalsIgnoreCase(request.getItemType())) {
+        if ("PRODUCT".equalsIgnoreCase(itemType)) {
             if (request.getProductId() == null) {
                 throw new InvalidDataException("Product ID is required for PRODUCT item type");
             }
             ProductEntity product = productRepository.findByIdAndIsActiveTrue(request.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + request.getProductId()));
-            item.setProduct(product);
-        } else if ("BUNDLE".equalsIgnoreCase(request.getItemType())) {
+
+            // Check if same product already exists in cart
+            CartItemEntity existingItem = cart.getCartItems().stream()
+                    .filter(ci -> "PRODUCT".equals(ci.getItemType())
+                            && ci.getProduct() != null
+                            && ci.getProduct().getId().equals(request.getProductId()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (existingItem != null) {
+                existingItem.setQuantity(existingItem.getQuantity() + quantityToAdd);
+            } else {
+                CartItemEntity newItem = CartItemEntity.builder()
+                        .cart(cart)
+                        .itemType(itemType)
+                        .product(product)
+                        .quantity(quantityToAdd)
+                        .build();
+                cart.getCartItems().add(newItem);
+            }
+
+        } else if ("BUNDLE".equalsIgnoreCase(itemType)) {
             if (request.getBundleId() == null) {
                 throw new InvalidDataException("Bundle ID is required for BUNDLE item type");
             }
             BundleEntity bundle = bundleRepository.findByIdAndIsActiveTrue(request.getBundleId())
                     .orElseThrow(() -> new ResourceNotFoundException("Bundle not found: " + request.getBundleId()));
-            item.setBundle(bundle);
+
+            // Check if same bundle already exists in cart
+            CartItemEntity existingItem = cart.getCartItems().stream()
+                    .filter(ci -> "BUNDLE".equals(ci.getItemType())
+                            && ci.getBundle() != null
+                            && ci.getBundle().getId().equals(request.getBundleId()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (existingItem != null) {
+                existingItem.setQuantity(existingItem.getQuantity() + quantityToAdd);
+            } else {
+                CartItemEntity newItem = CartItemEntity.builder()
+                        .cart(cart)
+                        .itemType(itemType)
+                        .bundle(bundle)
+                        .quantity(quantityToAdd)
+                        .build();
+                cart.getCartItems().add(newItem);
+            }
+
         } else {
             throw new InvalidDataException("Invalid item type. Must be PRODUCT or BUNDLE");
         }
 
-        cart.getCartItems().add(item);
         CartEntity saved = cartRepository.save(cart);
         return toResponse(saved);
     }

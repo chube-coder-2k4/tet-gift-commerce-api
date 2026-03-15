@@ -11,6 +11,7 @@ public class BlogResponse {
     private Long id;
     private String title;
     private String content;
+    private String image;
     private String topicName;
     private Long topicId;
     private LocalDateTime createdAt;

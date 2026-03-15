@@ -11,6 +11,7 @@ import com.tetgift.model.entity.BundleProductEntity;
 import com.tetgift.model.entity.ProductEntity;
 import com.tetgift.repository.jpa.BundleRepository;
 import com.tetgift.repository.jpa.ProductRepository;
+import com.tetgift.mapper.BundleMapper;
 import com.tetgift.service.BundleService;
 import com.tetgift.service.CloudinaryService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,12 +59,14 @@ public class BundleServiceImpl implements BundleService {
                             .orElseThrow(() -> new ProductNotFoundException("Product not found: " + bundleProduct.getProduct().getId()));
                     products.add(product);
                 }
-                double totalPrice = products.stream().mapToDouble(ProductEntity::getPrice).sum();
+                BigDecimal totalPrice = products.stream()
+                        .map(ProductEntity::getPrice)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
                 bundle.setPrice(totalPrice);
             }
 
             if (image != null && !image.isEmpty()) {
-                String imageUrl = cloudinaryService.uploadFile(image);
+                String imageUrl = cloudinaryService.uploadFile(image, "bundles");
                 bundle.setImage(imageUrl);
             }
 
@@ -117,10 +121,10 @@ public class BundleServiceImpl implements BundleService {
             BundleEntity bundle = bundleRepository.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Bundle not found"));
 
-            bundleMapper.updateBundle(bundle, request);
+            bundleMapper.updateEntity(bundle, request);
 
             if (image != null && !image.isEmpty()) {
-                String imageUrl = cloudinaryService.uploadFile(image);
+                String imageUrl = cloudinaryService.uploadFile(image, "bundles");
                 bundle.setImage(imageUrl);
             }
 
@@ -170,7 +174,9 @@ public class BundleServiceImpl implements BundleService {
         return BundleResponse.builder()
                 .id(bundle.getId())
                 .name(bundle.getName())
+                .description(bundle.getDescription())
                 .price(bundle.getPrice())
+                .image(bundle.getImage())
                 .isCustom(bundle.isCustom())
                 .isActive(bundle.isActive())
                 .products(products)

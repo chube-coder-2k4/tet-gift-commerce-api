@@ -28,6 +28,16 @@ public class DiscountEntity extends BaseEntity<Long> {
     @Column(name = "end_date")
     private LocalDateTime endDate;
 
+    @Column(name = "min_order_amount")
+    private BigDecimal minOrderAmount;
+
+    @Column(name = "usage_limit")
+    private Integer usageLimit;
+
+    @Column(name = "usage_count")
+    @Builder.Default
+    private Integer usageCount = 0;
+
     @Column(name = "is_active")
     @Builder.Default
     private boolean isActive = true;
