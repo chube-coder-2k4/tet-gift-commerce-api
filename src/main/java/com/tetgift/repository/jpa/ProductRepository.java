@@ -63,4 +63,42 @@ public interface ProductRepository extends JpaRepository<ProductEntity, Long> {
      */
     @Query("SELECT p FROM ProductEntity p WHERE p.isActive = true AND p.stock > 0 ORDER BY p.createdAt DESC")
     List<ProductEntity> findTopActiveProducts(Pageable pageable);
+
+    /**
+     * Find most expensive products (for "đắt nhất" queries)
+     */
+    @Query("SELECT p FROM ProductEntity p WHERE p.isActive = true AND p.stock > 0 ORDER BY p.price DESC")
+    List<ProductEntity> findByPriceDesc(Pageable pageable);
+
+    /**
+     * Find cheapest products (for "rẻ nhất" queries)
+     */
+    @Query("SELECT p FROM ProductEntity p WHERE p.isActive = true AND p.stock > 0 ORDER BY p.price ASC")
+    List<ProductEntity> findByPriceAsc(Pageable pageable);
+
+    // === Combined Chatbot Queries ===
+
+    /**
+     * Find products by category AND max price
+     */
+    @Query("SELECT p FROM ProductEntity p WHERE p.isActive = true AND LOWER(p.category.name) LIKE LOWER(CONCAT('%', :categoryName, '%')) AND p.price <= :maxPrice ORDER BY p.price ASC")
+    List<ProductEntity> findByCategoryAndMaxPrice(@Param("categoryName") String categoryName, @Param("maxPrice") BigDecimal maxPrice);
+
+    /**
+     * Find products by keyword AND max price
+     */
+    @Query("SELECT p FROM ProductEntity p WHERE p.isActive = true AND (LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND p.price <= :maxPrice ORDER BY p.price ASC")
+    List<ProductEntity> findByKeywordAndMaxPrice(@Param("keyword") String keyword, @Param("maxPrice") BigDecimal maxPrice);
+
+    /**
+     * Find products by keyword AND price range
+     */
+    @Query("SELECT p FROM ProductEntity p WHERE p.isActive = true AND (LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND p.price BETWEEN :minPrice AND :maxPrice ORDER BY p.price ASC")
+    List<ProductEntity> findByKeywordAndPriceRange(@Param("keyword") String keyword, @Param("minPrice") BigDecimal minPrice, @Param("maxPrice") BigDecimal maxPrice);
+
+    /**
+     * Find products by category AND price range
+     */
+    @Query("SELECT p FROM ProductEntity p WHERE p.isActive = true AND LOWER(p.category.name) LIKE LOWER(CONCAT('%', :categoryName, '%')) AND p.price BETWEEN :minPrice AND :maxPrice ORDER BY p.price ASC")
+    List<ProductEntity> findByCategoryAndPriceRange(@Param("categoryName") String categoryName, @Param("minPrice") BigDecimal minPrice, @Param("maxPrice") BigDecimal maxPrice);
 }

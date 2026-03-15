@@ -2,8 +2,8 @@ package com.tetgift.controller;
 
 import com.tetgift.dto.request.ChatbotRequest;
 import com.tetgift.dto.response.ChatbotResponse;
+import com.tetgift.dto.response.ChatMessageResponse;
 import com.tetgift.dto.response.ResponseData;
-import com.tetgift.model.entity.ChatMessageEntity;
 import com.tetgift.service.ai.ChatbotService;
 import com.tetgift.service.ai.EmbeddingService;
 import com.tetgift.util.AuthenticationUtils;
@@ -65,8 +65,8 @@ public class ChatbotController {
      */
     @GetMapping("/history/{sessionId}")
     @Operation(summary = "Get chat history", description = "Retrieve conversation history for a session")
-    public ResponseEntity<ResponseData<List<ChatMessageEntity>>> getHistory(@PathVariable String sessionId) {
-        List<ChatMessageEntity> history = chatbotService.getHistory(sessionId);
+    public ResponseEntity<ResponseData<List<ChatMessageResponse>>> getHistory(@PathVariable String sessionId) {
+        List<ChatMessageResponse> history = chatbotService.getHistory(sessionId);
 
         return ResponseEntity.ok(new ResponseData<>(
             HttpStatus.OK.value(),

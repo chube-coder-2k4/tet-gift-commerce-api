@@ -23,6 +23,7 @@ public class IntentResult {
     private Integer quantity;
     private String keyword;
     private String rawQuery;
+    private String sortBy; // PRICE_ASC, PRICE_DESC, NEWEST, POPULAR
 
     public enum IntentType {
         PRODUCT_SEARCH,      // Tìm sản phẩm
@@ -34,4 +35,3 @@ public class IntentResult {
         GENERAL_CHAT         // Trò chuyện chung
     }
 }
-
