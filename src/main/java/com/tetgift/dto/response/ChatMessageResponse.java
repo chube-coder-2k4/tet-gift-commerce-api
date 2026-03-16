@@ -1,18 +1,20 @@
 package com.tetgift.dto.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Data
 @Builder
-public class BlogResponse {
+@NoArgsConstructor
+@AllArgsConstructor
+public class ChatMessageResponse {
     private Long id;
-    private String title;
+    private String role;
     private String content;
-    private String image;
-    private String topicName;
-    private Long topicId;
+    private String intent;
     private LocalDateTime createdAt;
 }

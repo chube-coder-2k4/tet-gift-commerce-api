@@ -19,6 +19,9 @@ public class BlogEntity extends BaseEntity<Long> {
     @Column(columnDefinition = "TEXT")
     private String content;
 
+    @Column(name = "image")
+    private String image;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "topic_id")
     private BlogTopicEntity topic;

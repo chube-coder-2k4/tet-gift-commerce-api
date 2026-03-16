@@ -33,4 +33,11 @@ public class BundleEntity extends BaseEntity<Long> {
     @OneToMany(mappedBy = "bundle", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<BundleProductEntity> bundleProducts = new ArrayList<>();
+
+    private String description;
+
+    @Column(name = "image")
+    private String image;
+
+    private BigDecimal totalPrice;
 }

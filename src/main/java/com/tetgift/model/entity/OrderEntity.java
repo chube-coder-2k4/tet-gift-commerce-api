@@ -32,6 +32,14 @@ public class OrderEntity extends BaseEntity<Long> {
     @Builder.Default
     private OrderStatus status = OrderStatus.CREATED;
 
+    @Column(name = "receiver_name")
+    private String receiverName;
+
+    @Column(name = "receiver_phone", length = 20)
+    private String receiverPhone;
+
+    @Column(name = "shipping_address", length = 500)
+    private String shippingAddress;
     @Column(name = "vat_company_name")
     private String vatCompanyName;
 
@@ -43,6 +51,17 @@ public class OrderEntity extends BaseEntity<Long> {
 
     @Column(name = "vat_address", length = 500)
     private String vatAddress;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "discount_id")
+    private DiscountEntity discount;
+
+    @Column(name = "discount_code", length = 50)
+    private String discountCode;
+
+    @Column(name = "discount_amount")
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

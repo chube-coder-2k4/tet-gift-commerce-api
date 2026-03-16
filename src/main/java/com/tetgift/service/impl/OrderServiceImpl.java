@@ -9,7 +9,9 @@ import com.tetgift.exception.ForBiddenException;
 import com.tetgift.exception.InvalidDataException;
 import com.tetgift.exception.ResourceNotFoundException;
 import com.tetgift.model.Users;
+import com.tetgift.model.Address;
 import com.tetgift.model.entity.*;
+import com.tetgift.repository.jpa.AddressRepository;
 import com.tetgift.repository.jpa.CartRepository;
 import com.tetgift.repository.jpa.DiscountRepository;
 import com.tetgift.repository.jpa.OrderRepository;
@@ -19,6 +21,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +40,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
     private final DiscountRepository discountRepository;
+    private final AddressRepository addressRepository;
     private final AuthenticationUtils authenticationUtils;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -53,9 +58,16 @@ public class OrderServiceImpl implements OrderService {
             throw new InvalidDataException("Cart is empty");
         }
 
+        // Lookup delivery address and snapshot
+        Address address = addressRepository.findById(request.getAddressId())
+                .orElseThrow(() -> new ResourceNotFoundException("Address not found: " + request.getAddressId()));
+
         OrderEntity order = OrderEntity.builder()
                 .user(user)
                 .status(OrderStatus.CREATED)
+                .receiverName(address.getReceiverName())
+                .receiverPhone(address.getPhone())
+                .shippingAddress(address.getAddressDetail())
                 .vatCompanyName(request.getVatCompanyName())
                 .vatTaxCode(request.getVatTaxCode())
                 .vatPhone(request.getVatPhone())
@@ -90,7 +102,8 @@ public class OrderServiceImpl implements OrderService {
 
         // Apply discount
         if (request.getDiscountCode() != null && !request.getDiscountCode().isEmpty()) {
-            DiscountEntity discount = discountRepository.findByCodeAndIsActiveTrue(request.getDiscountCode())
+            DiscountEntity discount = discountRepository
+                    .findByCodeAndIsActiveTrue(request.getDiscountCode().toUpperCase())
                     .orElseThrow(() -> new InvalidDataException("Discount code not found or expired"));
 
             LocalDateTime now = LocalDateTime.now();
@@ -100,11 +113,29 @@ public class OrderServiceImpl implements OrderService {
             if (discount.getEndDate() != null && now.isAfter(discount.getEndDate())) {
                 throw new InvalidDataException("Discount code has expired");
             }
-
-            totalAmount = totalAmount.subtract(discount.getDiscountValue());
-            if (totalAmount.compareTo(BigDecimal.ZERO) < 0) {
-                totalAmount = BigDecimal.ZERO;
+            if (discount.getUsageLimit() != null && discount.getUsageCount() >= discount.getUsageLimit()) {
+                throw new InvalidDataException("Discount code has reached its usage limit");
             }
+            if (discount.getMinOrderAmount() != null && totalAmount.compareTo(discount.getMinOrderAmount()) < 0) {
+                throw new InvalidDataException("Order total must be at least " + discount.getMinOrderAmount()
+                        + " VND to use this discount code");
+            }
+
+            BigDecimal discountAmount = discount.getDiscountValue();
+            if (discountAmount.compareTo(totalAmount) > 0) {
+                discountAmount = totalAmount;
+            }
+
+            totalAmount = totalAmount.subtract(discountAmount);
+
+            // Link discount to order
+            order.setDiscount(discount);
+            order.setDiscountCode(discount.getCode());
+            order.setDiscountAmount(discountAmount);
+
+            // Increment usage count
+            discount.setUsageCount(discount.getUsageCount() + 1);
+            discountRepository.save(discount);
         }
 
         order.setTotalAmount(totalAmount);
@@ -112,9 +143,10 @@ public class OrderServiceImpl implements OrderService {
 
         OrderEntity saved = orderRepository.save(order);
 
-        // Clear cart after order
-        cart.getCartItems().clear();
-        cartRepository.save(cart);
+        // Cart is NOT cleared here - it will be cleared:
+        // - For COD: immediately when payment is created
+        // - For VN_PAY: only after payment success callback
+        // This prevents losing cart data if VNPay payment fails
 
         log.info("Order created: {} for user: {}", saved.getId(), user.getUsername());
         return toResponse(saved);
@@ -145,6 +177,24 @@ public class OrderServiceImpl implements OrderService {
                 .pageSize(size)
                 .totalItems(orders.getTotalElements())
                 .totalPages(orders.getTotalPages())
+                .build();
+    }
+
+    @Override
+    public PageResponse<OrderResponse> getAllOrders(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<OrderEntity> orderPage = orderRepository.findAll(pageable);
+
+        List<OrderResponse> responses = orderPage.getContent().stream()
+                .map(this::toResponse)
+                .toList();
+
+        return PageResponse.<OrderResponse>builder()
+                .data(responses)
+                .pageNo(orderPage.getNumber())
+                .pageSize(orderPage.getSize())
+                .totalItems(orderPage.getTotalElements())
+                .totalPages(orderPage.getTotalPages())
                 .build();
     }
 
@@ -214,6 +264,13 @@ public class OrderServiceImpl implements OrderService {
                 .id(order.getId())
                 .status(order.getStatus().name())
                 .totalAmount(order.getTotalAmount())
+                .customerName(order.getUser().getFullName())
+                .customerEmail(order.getUser().getEmail())
+                .receiverName(order.getReceiverName())
+                .receiverPhone(order.getReceiverPhone())
+                .shippingAddress(order.getShippingAddress())
+                .discountCode(order.getDiscountCode())
+                .discountAmount(order.getDiscountAmount())
                 .vatCompanyName(order.getVatCompanyName())
                 .vatTaxCode(order.getVatTaxCode())
                 .vatPhone(order.getVatPhone())

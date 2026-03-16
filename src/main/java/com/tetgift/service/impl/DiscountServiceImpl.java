@@ -26,6 +26,8 @@ public class DiscountServiceImpl implements DiscountService {
         DiscountEntity discount = DiscountEntity.builder()
                 .code(request.getCode().toUpperCase())
                 .discountValue(request.getDiscountValue())
+                .minOrderAmount(request.getMinOrderAmount())
+                .usageLimit(request.getUsageLimit())
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
                 .isActive(true)
@@ -54,6 +56,8 @@ public class DiscountServiceImpl implements DiscountService {
                 .orElseThrow(() -> new ResourceNotFoundException("Discount not found"));
         discount.setCode(request.getCode().toUpperCase());
         discount.setDiscountValue(request.getDiscountValue());
+        discount.setMinOrderAmount(request.getMinOrderAmount());
+        discount.setUsageLimit(request.getUsageLimit());
         discount.setStartDate(request.getStartDate());
         discount.setEndDate(request.getEndDate());
         DiscountEntity updated = discountRepository.save(discount);
@@ -81,6 +85,9 @@ public class DiscountServiceImpl implements DiscountService {
         if (discount.getEndDate() != null && now.isAfter(discount.getEndDate())) {
             throw new InvalidDataException("Discount code has expired");
         }
+        if (discount.getUsageLimit() != null && discount.getUsageCount() >= discount.getUsageLimit()) {
+            throw new InvalidDataException("Discount code has reached its usage limit");
+        }
 
         return toResponse(discount);
     }
@@ -90,6 +97,9 @@ public class DiscountServiceImpl implements DiscountService {
                 .id(discount.getId())
                 .code(discount.getCode())
                 .discountValue(discount.getDiscountValue())
+                .minOrderAmount(discount.getMinOrderAmount())
+                .usageLimit(discount.getUsageLimit())
+                .usageCount(discount.getUsageCount())
                 .startDate(discount.getStartDate())
                 .endDate(discount.getEndDate())
                 .isActive(discount.isActive())
