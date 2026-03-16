@@ -12,3 +12,4 @@ CREATE EXTENSION IF NOT EXISTS vector;
 --
 -- You do NOT need to run anything else manually.
 
+
