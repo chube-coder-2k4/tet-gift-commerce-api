@@ -61,6 +61,31 @@ public class ChatbotController {
     }
 
     /**
+     * Stream chat response via Server-Sent Events (SSE).
+     * Response is streamed token-by-token for real-time typing effect.
+     * 
+     * SSE Events:
+     * - data: [SESSION]{sessionId}        → session identifier
+     * - data: {token}                     → each generated token
+     * - data: [SUGGESTIONS]{json}         → product suggestion cards (JSON)
+     * - data: [DONE]                      → stream complete
+     * - data: [ERROR]{message}            → error occurred
+     */
+    @PostMapping(value = "/chat/stream", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "Chat with AI (Streaming)", description = "Stream AI response token-by-token via SSE for real-time typing effect")
+    public org.springframework.web.servlet.mvc.method.annotation.SseEmitter chatStream(@Valid @RequestBody ChatbotRequest request) {
+        log.info("Received streaming chat request: {}", request.getMessage());
+
+        // Set userId from authenticated user if available
+        Long currentUserId = authenticationUtils.getCurrentUserId();
+        if (currentUserId != null) {
+            request.setUserId(currentUserId);
+        }
+
+        return chatbotService.chatStream(request);
+    }
+
+    /**
      * Get conversation history
      */
     @GetMapping("/history/{sessionId}")
@@ -100,6 +125,3 @@ public class ChatbotController {
         ));
     }
 }
-
-
-

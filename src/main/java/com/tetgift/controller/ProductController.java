@@ -24,20 +24,20 @@ public class ProductController {
 
     @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Register Product (multipart)", description = "Register a new product with image upload")
+    @Operation(summary = "Register Product (multipart)", description = "Register a new product with multiple image upload. First image is PRIMARY, rest are COVER.")
     public ResponseEntity<ResponseData<Long>> registerProduct(
         @RequestPart("request") @Valid ProductRequest productRequest,
-        @RequestPart(value = "image", required = false) MultipartFile image
+        @RequestPart(value = "images", required = false) MultipartFile[] images
     ) {
         Long productId;
         try {
-            if (image != null && !image.isEmpty()) {
-                productId = productService.saveProduct(productRequest, image);
+            if (images != null && images.length > 0) {
+                productId = productService.saveProduct(productRequest, images);
             } else {
                 productId = productService.saveProduct(productRequest);
             }
         } catch (java.io.IOException e) {
-             throw new RuntimeException("Failed to upload image", e);
+             throw new RuntimeException("Failed to upload images", e);
         }
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -50,7 +50,7 @@ public class ProductController {
 
     @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Register Product (JSON)", description = "Register a new product without image")
+    @Operation(summary = "Register Product (JSON)", description = "Register a new product without file upload (image URLs in JSON body)")
     public ResponseEntity<ResponseData<Long>> registerProductJson(
         @RequestBody @Valid ProductRequest productRequest
     ) {
@@ -63,8 +63,9 @@ public class ProductController {
                         productId
                 ));
     }
+
     @GetMapping("/{id}")
-    @Operation(summary = "Get Product by ID", description = "Retrieve product details by its ID")
+    @Operation(summary = "Get Product by ID", description = "Retrieve product details by its ID (includes all images)")
     public ResponseEntity<ResponseData<ProductResponse>> getProductById(@PathVariable Long id){
         ProductResponse productResponse = productService.findProductById(id);
         return ResponseEntity
@@ -77,7 +78,7 @@ public class ProductController {
     }
 
     @GetMapping
-    @Operation(summary = "Get All Products", description = "Retrieve a paginated list of all products")
+    @Operation(summary = "Get All Products", description = "Retrieve a paginated list of all products (includes primary image)")
     public ResponseEntity<ResponseData<PageResponse<ProductResponse>>> getAllProducts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -92,22 +93,23 @@ public class ProductController {
                         productsPage
                 ));
     }
+
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Update Product (multipart)", description = "Update product with image upload")
+    @Operation(summary = "Update Product (multipart)", description = "Update product with multiple image upload. First image is PRIMARY, rest are COVER.")
     public ResponseEntity<ResponseData<Long>> updateProduct(@PathVariable Long id,
                                                             @RequestPart("request") @Valid ProductRequest productRequest,
-                                                            @RequestPart(value = "image", required = false) MultipartFile image
+                                                            @RequestPart(value = "images", required = false) MultipartFile[] images
     ) {
         Long updatedProductId;
         try {
-            if (image != null && !image.isEmpty()) {
-                updatedProductId = productService.updateProduct(id, productRequest, image);
+            if (images != null && images.length > 0) {
+                updatedProductId = productService.updateProduct(id, productRequest, images);
             } else {
                 updatedProductId = productService.updateProduct(id, productRequest);
             }
         } catch (java.io.IOException e) {
-            throw new RuntimeException("Failed to upload image", e);
+            throw new RuntimeException("Failed to upload images", e);
         }
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -120,7 +122,7 @@ public class ProductController {
 
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Update Product (JSON)", description = "Update product without image")
+    @Operation(summary = "Update Product (JSON)", description = "Update product without file upload (image URLs in JSON body)")
     public ResponseEntity<ResponseData<Long>> updateProductJson(@PathVariable Long id,
                                                                 @RequestBody @Valid ProductRequest productRequest
     ) {
@@ -136,7 +138,7 @@ public class ProductController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Delete Product", description = "Delete a product by its ID")
+    @Operation(summary = "Delete Product", description = "Soft-delete a product by its ID")
     public ResponseEntity<ResponseData<String>> deleteProduct(@PathVariable Long id){
         productService.deleteProduct(id);
         return ResponseEntity
