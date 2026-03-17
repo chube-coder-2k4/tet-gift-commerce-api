@@ -2,7 +2,9 @@ package com.tetgift.service;
 
 import com.tetgift.dto.request.DiscountRequest;
 import com.tetgift.dto.response.DiscountResponse;
+import com.tetgift.model.entity.DiscountEntity;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface DiscountService {
@@ -16,5 +18,5 @@ public interface DiscountService {
 
     void deleteDiscount(Long id);
 
-    DiscountResponse validateDiscountCode(String code);
+    DiscountResponse validateDiscountCode(String code, BigDecimal orderAmount);
 }

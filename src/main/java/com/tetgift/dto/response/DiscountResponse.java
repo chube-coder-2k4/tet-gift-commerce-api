@@ -21,4 +21,11 @@ public class DiscountResponse {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime endDate;
     private boolean isActive;
+
+    private String discountType;
+    private BigDecimal maxDiscountAmount;
+    private BigDecimal ActualDiscountAmount;
+    private String getDisplayValue;
+    private String typeLable;
+
 }

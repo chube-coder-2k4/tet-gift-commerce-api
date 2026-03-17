@@ -15,6 +15,7 @@ import com.tetgift.repository.jpa.AddressRepository;
 import com.tetgift.repository.jpa.CartRepository;
 import com.tetgift.repository.jpa.DiscountRepository;
 import com.tetgift.repository.jpa.OrderRepository;
+import com.tetgift.service.DiscountService;
 import com.tetgift.service.OrderService;
 import com.tetgift.util.AuthenticationUtils;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,7 @@ public class OrderServiceImpl implements OrderService {
     private final AddressRepository addressRepository;
     private final AuthenticationUtils authenticationUtils;
     private final SimpMessagingTemplate messagingTemplate;
+    private final DiscountServiceImpl discountService;
 
     @Override
     @Transactional
@@ -116,12 +118,15 @@ public class OrderServiceImpl implements OrderService {
             if (discount.getUsageLimit() != null && discount.getUsageCount() >= discount.getUsageLimit()) {
                 throw new InvalidDataException("Discount code has reached its usage limit");
             }
+
+        BigDecimal discountAmount = discountService.calculateActualDiscount(discount, totalAmount);
+
             if (discount.getMinOrderAmount() != null && totalAmount.compareTo(discount.getMinOrderAmount()) < 0) {
                 throw new InvalidDataException("Order total must be at least " + discount.getMinOrderAmount()
                         + " VND to use this discount code");
             }
 
-            BigDecimal discountAmount = discount.getDiscountValue();
+//            BigDecimal discountAmount = discount.getDiscountValue();
             if (discountAmount.compareTo(totalAmount) > 0) {
                 discountAmount = totalAmount;
             }
@@ -138,6 +143,50 @@ public class OrderServiceImpl implements OrderService {
             discountRepository.save(discount);
         }
 
+        // Apply discount
+//        if (request.getDiscountCode() != null && !request.getDiscountCode().isEmpty()) {
+//            DiscountEntity discount = discountRepository
+//                    .findByCodeAndIsActiveTrue(request.getDiscountCode().toUpperCase())
+//                    .orElseThrow(() -> new InvalidDataException("Discount code not found or expired"));
+//
+//            // 1. Kiểm tra thời hạn và giới hạn sử dụng
+//            LocalDateTime now = LocalDateTime.now();
+//            if (discount.getStartDate() != null && now.isBefore(discount.getStartDate())) {
+//                throw new InvalidDataException("Discount code is not yet active");
+//            }
+//            if (discount.getEndDate() != null && now.isAfter(discount.getEndDate())) {
+//                throw new InvalidDataException("Discount code has expired");
+//            }
+//            if (discount.getUsageLimit() != null && discount.getUsageCount() >= discount.getUsageLimit()) {
+//                throw new InvalidDataException("Discount code has reached its usage limit");
+//            }
+//
+//            // 2. GỌI HÀM TÍNH TOÁN LOGIC MỚI
+//            // Giả sử bạn đã đưa hàm này vào DiscountService hoặc DiscountEntity
+//            BigDecimal discountAmount = discountService.calculateActualDiscount(discount, totalAmount);
+//
+//            // 3. Kiểm tra nếu mức giảm = 0 (do không đủ minOrderAmount)
+//            if (discountAmount.compareTo(discount.getMinOrderAmount()) < 0) {
+//                throw new InvalidDataException("Order total must be at least " + discount.getMinOrderAmount()
+//                        + " VND to use this discount code");
+//            }
+//
+//            // Đảm bảo số tiền giảm không vượt quá tổng đơn hàng
+//            if (discountAmount.compareTo(totalAmount) > 1) {
+//                discountAmount = totalAmount;
+//            }
+//
+//            totalAmount = totalAmount.subtract(discountAmount);
+//
+//            // Link discount to order
+//            order.setDiscount(discount);
+//            order.setDiscountCode(discount.getCode());
+//            order.setDiscountAmount(discountAmount);
+//
+//            // Increment usage count
+//            discount.setUsageCount(discount.getUsageCount() + 1);
+//            discountRepository.save(discount);
+//        }
         order.setTotalAmount(totalAmount);
         order.setOrderItems(orderItems);
 

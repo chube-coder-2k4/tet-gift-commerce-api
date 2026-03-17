@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -67,8 +68,8 @@ public class DiscountController {
     @PostMapping("/validate")
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Validate discount code (USER)")
-    public ResponseEntity<ResponseData<DiscountResponse>> validate(@RequestParam String code) {
+    public ResponseEntity<ResponseData<DiscountResponse>> validate(@RequestParam String code,@RequestParam BigDecimal orderAmount ) {
         return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Discount code is valid",
-                discountService.validateDiscountCode(code)));
+                discountService.validateDiscountCode(code, orderAmount)));
     }
 }

@@ -1,5 +1,6 @@
 package com.tetgift.model.entity;
 
+import com.tetgift.enums.DiscountType;
 import com.tetgift.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -41,4 +42,13 @@ public class DiscountEntity extends BaseEntity<Long> {
     @Column(name = "is_active")
     @Builder.Default
     private boolean isActive = true;
+
+
+    // Loại giảm giá: FIXED (giảm theo số tiền cố định) hoặc PERCENTAGE (giảm theo phần trăm)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "discount_type", nullable = false)
+    private DiscountType discountType; // FIXED hoặc PERCENTAGE
+
+    @Column(name = "max_discount_amount")
+    private BigDecimal maxDiscountAmount; // Mức giảm tối đa (ví dụ: 80k)
 }
