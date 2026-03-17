@@ -63,6 +63,14 @@ public class OrderEntity extends BaseEntity<Long> {
     @Builder.Default
     private BigDecimal discountAmount = BigDecimal.ZERO;
 
+    @Column(name = "tier_discount_percent")
+    @Builder.Default
+    private Integer tierDiscountPercent = 0;
+
+    @Column(name = "tier_discount_amount")
+    @Builder.Default
+    private BigDecimal tierDiscountAmount = BigDecimal.ZERO;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrderItemEntity> orderItems = new ArrayList<>();
