@@ -10,8 +10,8 @@ RUN mvn clean package -DskipTests
 
 
 # ---------- RUNTIME ----------
-# Switch from alpine to standard image to support glibc for Spring AI / DJL native libs
-FROM amazoncorretto:21
+# Switch to Ubuntu 22.04 (Jammy) to ensure GLIBC > 2.27 for Spring AI OnnxRuntime
+FROM eclipse-temurin:21-jre-jammy
 
 WORKDIR /app
 
