@@ -69,6 +69,4 @@ services:
       - "8085:8085"
     networks:
       - commerce-network
-    env_file:
-      - .env
 
