@@ -14,6 +14,7 @@ import com.tetgift.model.entity.PaymentEntity;
 import com.tetgift.repository.jpa.CartRepository;
 import com.tetgift.repository.jpa.OrderRepository;
 import com.tetgift.repository.jpa.PaymentRepository;
+import com.tetgift.service.InvoiceService;
 import com.tetgift.service.PaymentService;
 import com.tetgift.util.VNPayUtil;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
     private final VNPayConfig vnPayConfig;
+    private final InvoiceService invoiceService;
 
     private static final long MIN_PAYMENT_AMOUNT = 5000; // 5,000 VNĐ
 
@@ -72,6 +74,10 @@ public class PaymentServiceImpl implements PaymentService {
             clearCartForUser(order.getUser().getId());
 
             log.info("Free order auto-completed: orderId={}, userId={}", order.getId(), order.getUser().getId());
+
+            // Auto-generate invoice if VAT info present
+            generateInvoiceIfNeeded(order);
+
             return toResponse(saved, null);
         }
 
@@ -152,6 +158,9 @@ public class PaymentServiceImpl implements PaymentService {
 
                 // VNPay success: clear cart now
                 clearCartForUser(order.getUser().getId());
+
+                // Auto-generate invoice
+                generateInvoiceIfNeeded(order);
             }
         } else {
              payment.setStatus(PaymentStatus.FAILED);
@@ -230,6 +239,9 @@ public class PaymentServiceImpl implements PaymentService {
 
             // VNPay IPN success: clear cart now
             clearCartForUser(order.getUser().getId());
+
+            // Auto-generate invoice
+            generateInvoiceIfNeeded(order);
         } else {
             payment.setStatus(PaymentStatus.FAILED);
         }
@@ -257,5 +269,19 @@ public class PaymentServiceImpl implements PaymentService {
             cartRepository.save(cart);
             log.info("Cart cleared for user: {}", userId);
         });
+    }
+
+    /**
+     * Auto-generate invoice if order has VAT info (business customer).
+     * Non-blocking: failures are logged but don't affect payment flow.
+     */
+    private void generateInvoiceIfNeeded(OrderEntity order) {
+        // Generate for all paid orders (both B2B with VAT info and B2C)
+        try {
+            invoiceService.generateInvoice(order.getId());
+            log.info("Invoice auto-generated for order: {}", order.getId());
+        } catch (Exception e) {
+            log.warn("Failed to auto-generate invoice for order {}: {}", order.getId(), e.getMessage());
+        }
     }
 }

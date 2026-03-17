@@ -167,6 +167,13 @@
             <version>11.16.0</version>
         </dependency>
 
+        <!-- HTML to PDF (Invoice generation) -->
+        <dependency>
+            <groupId>org.xhtmlrenderer</groupId>
+            <artifactId>flying-saucer-pdf</artifactId>
+            <version>9.4.0</version>
+        </dependency>
+
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>

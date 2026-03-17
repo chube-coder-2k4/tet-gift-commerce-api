@@ -100,7 +100,23 @@ public class OrderServiceImpl implements OrderService {
             totalAmount = totalAmount.add(price.multiply(BigDecimal.valueOf(cartItem.getQuantity())));
         }
 
-        // Apply discount
+        // ---- Subtotal (before any discounts) ----
+        BigDecimal subtotalBeforeDiscount = totalAmount;
+
+        // ---- Apply Tier Discount (automatic, based on order total) ----
+        int tierPercent = calculateTierDiscountPercent(totalAmount);
+        BigDecimal tierDiscountAmount = BigDecimal.ZERO;
+        if (tierPercent > 0) {
+            tierDiscountAmount = totalAmount
+                    .multiply(BigDecimal.valueOf(tierPercent))
+                    .divide(BigDecimal.valueOf(100), 0, java.math.RoundingMode.FLOOR);
+            totalAmount = totalAmount.subtract(tierDiscountAmount);
+            order.setTierDiscountPercent(tierPercent);
+            order.setTierDiscountAmount(tierDiscountAmount);
+            log.info("Applied tier discount: {}% = {} VND (subtotal: {})", tierPercent, tierDiscountAmount, subtotalBeforeDiscount);
+        }
+
+        // ---- Apply Discount Code (manual, user entered) ----
         if (request.getDiscountCode() != null && !request.getDiscountCode().isEmpty()) {
             DiscountEntity discount = discountRepository
                     .findByCodeAndIsActiveTrue(request.getDiscountCode().toUpperCase())
@@ -116,7 +132,8 @@ public class OrderServiceImpl implements OrderService {
             if (discount.getUsageLimit() != null && discount.getUsageCount() >= discount.getUsageLimit()) {
                 throw new InvalidDataException("Discount code has reached its usage limit");
             }
-            if (discount.getMinOrderAmount() != null && totalAmount.compareTo(discount.getMinOrderAmount()) < 0) {
+            // Min order check is against subtotal BEFORE tier discount
+            if (discount.getMinOrderAmount() != null && subtotalBeforeDiscount.compareTo(discount.getMinOrderAmount()) < 0) {
                 throw new InvalidDataException("Order total must be at least " + discount.getMinOrderAmount()
                         + " VND to use this discount code");
             }
@@ -264,6 +281,7 @@ public class OrderServiceImpl implements OrderService {
                 .id(order.getId())
                 .status(order.getStatus().name())
                 .totalAmount(order.getTotalAmount())
+                .subtotalBeforeDiscount(calculateSubtotal(order))
                 .customerName(order.getUser().getFullName())
                 .customerEmail(order.getUser().getEmail())
                 .receiverName(order.getReceiverName())
@@ -271,6 +289,8 @@ public class OrderServiceImpl implements OrderService {
                 .shippingAddress(order.getShippingAddress())
                 .discountCode(order.getDiscountCode())
                 .discountAmount(order.getDiscountAmount())
+                .tierDiscountPercent(order.getTierDiscountPercent())
+                .tierDiscountAmount(order.getTierDiscountAmount())
                 .vatCompanyName(order.getVatCompanyName())
                 .vatTaxCode(order.getVatTaxCode())
                 .vatPhone(order.getVatPhone())
@@ -278,5 +298,30 @@ public class OrderServiceImpl implements OrderService {
                 .items(items)
                 .createdAt(order.getCreatedAt())
                 .build();
+    }
+
+    /**
+     * Calculate tier discount percentage based on order subtotal.
+     * >= 50,000,000 -> 10%
+     * >= 30,000,000 ->  8%
+     * >= 15,000,000 ->  5%
+     * >= 10,000,000 ->  3%
+     * < 10,000,000  ->  0%
+     */
+    private int calculateTierDiscountPercent(BigDecimal subtotal) {
+        if (subtotal.compareTo(BigDecimal.valueOf(50_000_000)) >= 0) return 10;
+        if (subtotal.compareTo(BigDecimal.valueOf(30_000_000)) >= 0) return 8;
+        if (subtotal.compareTo(BigDecimal.valueOf(15_000_000)) >= 0) return 5;
+        if (subtotal.compareTo(BigDecimal.valueOf(10_000_000)) >= 0) return 3;
+        return 0;
+    }
+
+    /**
+     * Calculate subtotal from order items (before any discounts).
+     */
+    private BigDecimal calculateSubtotal(OrderEntity order) {
+        return order.getOrderItems().stream()
+                .map(item -> item.getPriceSnapshot().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

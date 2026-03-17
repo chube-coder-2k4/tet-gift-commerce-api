@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Hóa đơn</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #333; padding: 30px; }
+
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 3px solid #c0392b; padding-bottom: 15px; }
+        .header h1 { font-size: 22px; color: #c0392b; margin-bottom: 5px; }
+        .header h2 { font-size: 14px; color: #555; font-weight: normal; }
+        .invoice-number { font-size: 13px; color: #c0392b; font-weight: bold; margin-top: 8px; }
+
+        .info-section { display: flex; margin-bottom: 20px; }
+        .info-left, .info-right { width: 50%; }
+        .info-left { padding-right: 15px; }
+        .info-right { padding-left: 15px; text-align: right; }
+
+        .section-title { font-size: 13px; font-weight: bold; color: #c0392b; margin-bottom: 8px;
+            border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+        .info-row { margin-bottom: 4px; }
+        .info-label { color: #777; display: inline-block; width: 120px; }
+        .info-value { font-weight: bold; }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th { background-color: #c0392b; color: white; padding: 8px 10px; text-align: left; font-size: 11px; }
+        td { padding: 7px 10px; border-bottom: 1px solid #eee; font-size: 11px; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+
+        .summary { float: right; width: 300px; margin-bottom: 30px; }
+        .summary-row { display: flex; justify-content: space-between; padding: 5px 0;
+            border-bottom: 1px dotted #ddd; }
+        .summary-row.total { border-bottom: 2px solid #c0392b; border-top: 2px solid #c0392b;
+            font-size: 14px; font-weight: bold; color: #c0392b; padding: 8px 0; margin-top: 5px; }
+
+        .footer { clear: both; text-align: center; margin-top: 40px; padding-top: 15px;
+            border-top: 1px solid #ddd; color: #999; font-size: 10px; }
+
+        .clearfix::after { content: ""; display: table; clear: both; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>TẾT GIFT COMMERCE</h1>
+        <h2>HÓA ĐƠN BÁN HÀNG / SALES INVOICE</h2>
+        <div class="invoice-number" th:text="'Số hóa đơn: ' + ${invoiceNumber}"></div>
+    </div>
+
+    <table style="width:100%; border:none; margin-bottom:20px;">
+        <tr>
+            <td style="width:50%; vertical-align:top; border:none; padding:0 15px 0 0;">
+                <div class="section-title">THÔNG TIN DOANH NGHIỆP MUA HÀNG</div>
+                <div class="info-row">
+                    <span class="info-label">Công ty:</span>
+                    <span class="info-value" th:text="${companyName} ?: 'Khách lẻ'"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Mã số thuế:</span>
+                    <span class="info-value" th:text="${taxCode} ?: '—'"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Điện thoại:</span>
+                    <span class="info-value" th:text="${companyPhone} ?: '—'"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Địa chỉ:</span>
+                    <span class="info-value" th:text="${companyAddress} ?: '—'"></span>
+                </div>
+            </td>
+            <td style="width:50%; vertical-align:top; border:none; padding:0 0 0 15px; text-align:right;">
+                <div class="section-title">THÔNG TIN ĐƠN HÀNG</div>
+                <div class="info-row">
+                    <span class="info-label">Mã đơn hàng:</span>
+                    <span class="info-value" th:text="'#' + ${orderId}"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Ngày xuất:</span>
+                    <span class="info-value" th:text="${issuedDate}"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Người nhận:</span>
+                    <span class="info-value" th:text="${receiverName}"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">SĐT người nhận:</span>
+                    <span class="info-value" th:text="${receiverPhone}"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Địa chỉ giao:</span>
+                    <span class="info-value" th:text="${shippingAddress}"></span>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="section-title">CHI TIẾT SẢN PHẨM</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width:5%;">STT</th>
+                <th style="width:40%;">Tên sản phẩm</th>
+                <th style="width:10%;" class="text-center">Loại</th>
+                <th style="width:15%;" class="text-right">Đơn giá</th>
+                <th style="width:10%;" class="text-center">SL</th>
+                <th style="width:20%;" class="text-right">Thành tiền</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="item, stat : ${items}">
+                <td th:text="${stat.count}" class="text-center"></td>
+                <td th:text="${item.name}"></td>
+                <td th:text="${item.type}" class="text-center"></td>
+                <td th:text="${item.priceFormatted}" class="text-right"></td>
+                <td th:text="${item.quantity}" class="text-center"></td>
+                <td th:text="${item.subtotalFormatted}" class="text-right"></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="clearfix">
+        <div class="summary">
+            <div class="summary-row">
+                <span>Tạm tính:</span>
+                <span th:text="${subtotalFormatted}"></span>
+            </div>
+            <div class="summary-row" th:if="${tierDiscountPercent != null and tierDiscountPercent > 0}">
+                <span th:text="'Giảm giá theo đơn (' + ${tierDiscountPercent} + '%):'"></span>
+                <span th:text="'-' + ${tierDiscountFormatted}"></span>
+            </div>
+            <div class="summary-row" th:if="${discountCode != null}">
+                <span th:text="'Mã giảm giá (' + ${discountCode} + '):'"></span>
+                <span th:text="'-' + ${discountFormatted}"></span>
+            </div>
+            <div class="summary-row total">
+                <span>TỔNG THANH TOÁN:</span>
+                <span th:text="${totalFormatted}"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Cảm ơn quý khách đã mua hàng tại Tết Gift Commerce!</p>
+        <p>Hotline: 1900-1234 | Email: support@tetgift.com | Website: www.tetgift.com</p>
+        <p style="margin-top:5px;">Hóa đơn này được tạo tự động bởi hệ thống.</p>
+    </div>
+</body>
+</html>

@@ -27,6 +27,13 @@ public class OrderResponse {
     private String discountCode;
     private BigDecimal discountAmount;
 
+    // Tier discount info (auto applied based on order total)
+    private Integer tierDiscountPercent;
+    private BigDecimal tierDiscountAmount;
+
+    // Subtotal before any discounts
+    private BigDecimal subtotalBeforeDiscount;
+
     // VAT info
     private String vatCompanyName;
     private String vatTaxCode;
