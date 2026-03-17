@@ -16,4 +16,5 @@ public class VNPayConfig {
     private String apiUrl;
     private String returnUrl;
     private String ipnUrl;
+    private String frontendResultUrl;
 }

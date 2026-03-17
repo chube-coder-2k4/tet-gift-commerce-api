@@ -15,6 +15,12 @@ FROM eclipse-temurin:21-jre-jammy
 
 WORKDIR /app
 
+# Pre-download ONNX model and tokenizer at build time to avoid runtime download issues
+RUN mkdir -p /app/models && \
+    apt-get update && apt-get install -y curl && \
+    curl -L -o /app/models/model.onnx "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx?download=true" && \
+    curl -L -o /app/models/tokenizer.json "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json?download=true" && \
+    apt-get remove -y curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
 ENV JAVA_OPTS=""
 
