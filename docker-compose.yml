@@ -104,6 +104,6 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
 
     ports:
-      - "8085:8085"
+      - "8085:8080"
     networks:
       - commerce-network
