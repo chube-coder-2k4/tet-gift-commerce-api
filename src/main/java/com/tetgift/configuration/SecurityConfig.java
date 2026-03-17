@@ -1,5 +1,6 @@
 package com.tetgift.configuration;
 
+import com.tetgift.component.ChatbotRateLimitFilter;
 import com.tetgift.component.JwtAccessDeniedHandler;
 import com.tetgift.component.JwtAuthenticationEntryPoint;
 import com.tetgift.component.OAuth2SuccessHandler;
@@ -37,6 +38,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
         private final PreFilter preFilter;
+        private final ChatbotRateLimitFilter chatbotRateLimitFilter;
         private final UserDetailsService userDetailsService;
         private final PasswordEncoder passwordEncoder;
         private final CustomOAuth2UserService customOAuth2UserService;
@@ -51,6 +53,7 @@ public class SecurityConfig {
                         "/api/v1/payments/vnpay-callback",
                         "/api/v1/payments/vnpay-ipn",
                         "/api/v1/chatbot/chat",
+                        "/api/v1/chatbot/chat/stream",
                         "/api/v1/chatbot/history/**",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
@@ -86,6 +89,7 @@ public class SecurityConfig {
                                                                 .oidcUserService(customOidcUserService))
                                                 .successHandler(oAuth2SuccessHandler))
                                 .authenticationProvider(authenticationProvider())
+                                .addFilterBefore(chatbotRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                                 .addFilterBefore(preFilter, UsernamePasswordAuthenticationFilter.class);
 
                 return http.build();

@@ -16,7 +16,8 @@ public class ProductResponse {
     private String description;
     private BigDecimal price;
     private Integer stock;
-    private String image;
+    private String image;          // legacy field (primary image URL)
+    private String primaryImage;   // primary image URL for list view
     private String categoryName;
     private Long categoryId;
     private boolean isActive;
@@ -27,5 +28,5 @@ public class ProductResponse {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate expDate;
 
-    private List<ProductImageResponse> images;
+    private List<ProductImageResponse> images;  // all images for detail view
 }
