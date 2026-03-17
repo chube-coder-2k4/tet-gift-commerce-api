@@ -10,12 +10,11 @@ RUN mvn clean package -DskipTests
 
 
 # ---------- RUNTIME ----------
-FROM amazoncorretto:21-alpine
+# Switch from alpine to standard image to support glibc for Spring AI / DJL native libs
+FROM amazoncorretto:21
 
 WORKDIR /app
 
-# 🔥 THÊM DÒNG NÀY
-RUN apk add --no-cache libstdc++
 
 ENV JAVA_OPTS=""
 
