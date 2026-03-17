@@ -71,9 +71,9 @@ spring:
     transformers:
       embedding:
         onnx:
-          modelUri: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx
+          modelUri: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx?download=true
         tokenizer:
-          uri: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json
+          uri: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json?download=true
 
 
 management:
@@ -97,6 +97,7 @@ vnpay:
   api-url: ${VNPAY_API_URL}
   return-url: ${VNPAY_RETURN_URL}
   ipn-url: ${VNPAY_IPN_URL}
+  frontend-result-url: ${VNPAY_FRONTEND_RESULT_URL}
 jwt:
   timeout: ${JWT_TIME_OUT}
   secretKey: ${JWT_SECRET}
