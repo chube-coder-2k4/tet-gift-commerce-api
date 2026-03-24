@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.time.LocalDateTime;
 
@@ -27,12 +28,13 @@ public class GlobalHandlerException {
         errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
 
         String message = e.getMessage();
-        if (e instanceof MethodArgumentNotValidException) {
-            int start = message.lastIndexOf("[") + 1;
-            int end = message.lastIndexOf("]") - 1;
-            message = message.substring(start, end);
+        if (e instanceof MethodArgumentNotValidException ex) {
+            String errorMessage = ex.getBindingResult().getFieldErrors().stream()
+                    .map(error -> error.getDefaultMessage())
+                    .findFirst()
+                    .orElse("Invalid input data");
             errorResponse.setError("Invalid Payload");
-            errorResponse.setMessage(message);
+            errorResponse.setMessage(errorMessage);
         } else if (e instanceof MissingServletRequestParameterException) {
             errorResponse.setError("Invalid Parameter");
             errorResponse.setMessage(message);
@@ -104,6 +106,18 @@ public class GlobalHandlerException {
         errorResponse.setStatus(NOT_FOUND.value());
         errorResponse.setError("Not Found");
         errorResponse.setMessage(e.getMessage());
+        return errorResponse;
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    @ResponseStatus(CONFLICT)
+    public ErrorResponse handleOptimisticLockingFailureException(ObjectOptimisticLockingFailureException e, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(LocalDateTime.now());
+        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
+        errorResponse.setStatus(CONFLICT.value());
+        errorResponse.setError(CONFLICT.getReasonPhrase());
+        errorResponse.setMessage("Dữ liệu đang được cập nhật bởi thao tác khác, vui lòng thử lại.");
         return errorResponse;
     }
 

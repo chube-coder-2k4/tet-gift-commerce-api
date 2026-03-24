@@ -43,6 +43,9 @@ public class ProductEntity extends BaseEntity<Long> {
     @Builder.Default
     private boolean isActive = true;
 
+    @Version
+    private Long version;
+
     @Column(name = "manufacture_date")
     private LocalDate manufactureDate;
 

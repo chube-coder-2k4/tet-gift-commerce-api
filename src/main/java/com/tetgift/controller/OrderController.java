@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,7 +24,7 @@ public class OrderController {
 
         @PostMapping
         @Operation(summary = "Create order from cart", description = "Create a new order from the current user's cart")
-        public ResponseEntity<ResponseData<OrderResponse>> createOrder(@RequestBody OrderRequest request) {
+        public ResponseEntity<ResponseData<OrderResponse>> createOrder(@Valid @RequestBody OrderRequest request) {
                 return ResponseEntity.status(HttpStatus.CREATED)
                                 .body(new ResponseData<>(HttpStatus.CREATED.value(), "Order created successfully",
                                                 orderService.createOrder(request)));
