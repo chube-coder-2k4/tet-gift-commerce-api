@@ -94,6 +94,8 @@ public class CartServiceImpl implements CartService {
                         .itemType(itemType)
                         .bundle(bundle)
                         .quantity(quantityToAdd)
+                        .isCustomCombo(request.isCustomCombo())
+                        .customComboData(request.getCustomComboData())
                         .build();
                 cart.getCartItems().add(newItem);
             }
@@ -197,6 +199,8 @@ public class CartServiceImpl implements CartService {
                 .itemPrice(price)
                 .quantity(item.getQuantity())
                 .subtotal(price.multiply(BigDecimal.valueOf(item.getQuantity())))
+                .isCustomCombo(item.isCustomCombo())
+                .customComboData(item.getCustomComboData())
                 .build();
     }
 }

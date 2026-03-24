@@ -40,4 +40,11 @@ public class BundleEntity extends BaseEntity<Long> {
     private String image;
 
     private BigDecimal totalPrice;
+
+    @Column(name = "stock")
+    @Builder.Default
+    private Integer stock = 0;
+
+    @Version
+    private Long version;
 }

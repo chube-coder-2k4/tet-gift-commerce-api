@@ -31,4 +31,11 @@ public class CartItemEntity extends BaseEntity<Long> {
     @Column(nullable = false)
     @Builder.Default
     private Integer quantity = 1;
+
+    @Column(name = "is_custom_combo")
+    @Builder.Default
+    private boolean isCustomCombo = false;
+
+    @Column(columnDefinition = "TEXT", name = "custom_combo_data")
+    private String customComboData;
 }
