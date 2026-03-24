@@ -206,6 +206,11 @@ public class InvoiceServiceImpl implements InvoiceService {
         // Convert HTML to PDF
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             ITextRenderer renderer = new ITextRenderer();
+            
+            // Ép IText phải đọc thư viện font Unicode Tiếng Việt
+            org.springframework.core.io.ClassPathResource fontResource = new org.springframework.core.io.ClassPathResource("fonts/Roboto-Regular.ttf");
+            renderer.getFontResolver().addFont(fontResource.getURL().toString(), "Identity-H", true);
+
             renderer.setDocumentFromString(html);
             renderer.layout();
             renderer.createPDF(out);

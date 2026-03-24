@@ -51,7 +51,7 @@ public class OrderServiceImpl implements OrderService {
         if (user == null)
             throw new ForBiddenException("User not authenticated");
 
-        CartEntity cart = cartRepository.findByUserId(user.getId())
+        CartEntity cart = cartRepository.findWithItemsByUserId(user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
 
         if (cart.getCartItems().isEmpty()) {
@@ -81,9 +81,23 @@ public class OrderServiceImpl implements OrderService {
         for (CartItemEntity cartItem : cart.getCartItems()) {
             BigDecimal price;
             if ("PRODUCT".equals(cartItem.getItemType()) && cartItem.getProduct() != null) {
-                price = cartItem.getProduct().getPrice();
+                ProductEntity product = cartItem.getProduct();
+                if (product.getStock() < cartItem.getQuantity()) {
+                    throw new InvalidDataException("Sản phẩm " + product.getName() + " không đủ số lượng trong kho");
+                }
+                product.setStock(product.getStock() - cartItem.getQuantity());
+                price = product.getPrice();
             } else if ("BUNDLE".equals(cartItem.getItemType()) && cartItem.getBundle() != null) {
-                price = cartItem.getBundle().getPrice();
+                BundleEntity bundle = cartItem.getBundle();
+                for (BundleProductEntity bundleProduct : bundle.getBundleProducts()) {
+                    ProductEntity componentProduct = bundleProduct.getProduct();
+                    int totalNeeded = cartItem.getQuantity() * bundleProduct.getQuantity();
+                    if (componentProduct.getStock() < totalNeeded) {
+                        throw new InvalidDataException("Sản phẩm " + componentProduct.getName() + " (trong " + bundle.getName() + ") không đủ số lượng trong kho");
+                    }
+                    componentProduct.setStock(componentProduct.getStock() - totalNeeded);
+                }
+                price = bundle.getPrice();
             } else {
                 continue;
             }
