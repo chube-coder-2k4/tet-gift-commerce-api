@@ -109,7 +109,7 @@ public class OrderServiceImpl implements OrderService {
                     .bundle(cartItem.getBundle())
                     .priceSnapshot(price)
                     .quantity(cartItem.getQuantity())
-                    .isCustomCombo(cartItem.isCustomCombo())
+                    .isCustomCombo(cartItem.getIsCustomCombo())
                     .customComboData(cartItem.getCustomComboData())
                     .build();
             orderItems.add(orderItem);
@@ -290,7 +290,7 @@ public class OrderServiceImpl implements OrderService {
                             .priceSnapshot(item.getPriceSnapshot())
                             .quantity(item.getQuantity())
                             .subtotal(item.getPriceSnapshot().multiply(BigDecimal.valueOf(item.getQuantity())))
-                            .isCustomCombo(item.isCustomCombo())
+                            .isCustomCombo(item.getIsCustomCombo())
                             .customComboData(item.getCustomComboData())
                             .build();
                 }).toList();
