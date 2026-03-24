@@ -40,7 +40,7 @@ spring:
             client-secret: ${GOOGLE_CLIENT_SECRET}
             scope: openid,profile,email
             authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/google"
+            redirect-uri: "https://api.quanghuycoder.id.vn/login/oauth2/code/google"
 #          keycloak:
 #            client-id: ${KEYCLOAK_CLIENT_ID}
 #            client-secret: ${KEYCLOAK_CLIENT_SECRET}
@@ -106,8 +106,8 @@ jwt:
   resetKey: ${JWT_RESET_PASSWORD_SECRET}
 
 app:
-  frontend-url: http://localhost:3000
-  cookie-secure: false
+  frontend-url: https://store.quanghuycoder.id.vn
+  cookie-secure: true
 
 mail:
   from: qhuyddbmt123@gmail.com
