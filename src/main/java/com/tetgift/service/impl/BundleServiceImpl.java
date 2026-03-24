@@ -51,16 +51,23 @@ public class BundleServiceImpl implements BundleService {
     private Long createBundleInternal(BundleRequest request, MultipartFile image) {
         try {
             BundleEntity bundle = bundleMapper.toEntity(request);
-            // Calculate total price if not custom
-            if (!request.isCustom()) {
-                List<ProductEntity> products = new ArrayList<>();
+            
+            // Link back bundle and replace detached products with managed products
+            if (bundle.getBundleProducts() != null) {
                 for (BundleProductEntity bundleProduct : bundle.getBundleProducts()) {
-                    ProductEntity product = productRepository.findByIdAndIsActiveTrue(bundleProduct.getProduct().getId())
-                            .orElseThrow(() -> new ProductNotFoundException("Product not found: " + bundleProduct.getProduct().getId()));
-                    products.add(product);
+                    bundleProduct.setBundle(bundle); // Link back
+                    if (bundleProduct.getProduct() != null && bundleProduct.getProduct().getId() != null) {
+                        ProductEntity product = productRepository.findById(bundleProduct.getProduct().getId())
+                                .orElseThrow(() -> new ProductNotFoundException("Product not found: " + bundleProduct.getProduct().getId()));
+                        bundleProduct.setProduct(product); // Replace detached product with fetched one
+                    }
                 }
-                BigDecimal totalPrice = products.stream()
-                        .map(ProductEntity::getPrice)
+            }
+
+            // Calculate total price if not custom
+            if (!request.isCustom() && bundle.getBundleProducts() != null) {
+                BigDecimal totalPrice = bundle.getBundleProducts().stream()
+                        .map(bp -> bp.getProduct().getPrice())
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
                 bundle.setPrice(totalPrice);
             }
