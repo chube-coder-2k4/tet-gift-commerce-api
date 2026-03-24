@@ -67,7 +67,7 @@ public class BundleServiceImpl implements BundleService {
             // Calculate total price if not custom
             if (!request.isCustom() && bundle.getBundleProducts() != null) {
                 BigDecimal totalPrice = bundle.getBundleProducts().stream()
-                        .map(bp -> bp.getProduct().getPrice())
+                        .map(bp -> bp.getProduct().getPrice().multiply(BigDecimal.valueOf(bp.getQuantity())))
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
                 bundle.setPrice(totalPrice);
             }
@@ -150,9 +150,18 @@ public class BundleServiceImpl implements BundleService {
                                     .build();
                         }).toList();
                 bundle.getBundleProducts().addAll(bundleProducts);
+
+                // recalculate total price
+                if (!request.isCustom()) {
+                    BigDecimal totalPrice = bundleProducts.stream()
+                        .map(bp -> bp.getProduct().getPrice().multiply(BigDecimal.valueOf(bp.getQuantity())))
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    bundle.setPrice(totalPrice);
+                }
             }
 
-            return bundleRepository.save(bundle).getId();
+            BundleEntity updated = bundleRepository.save(bundle);
+            return updated.getId();
         } catch (IOException e) {
             throw new RuntimeException("Failed to upload image", e);
         }
