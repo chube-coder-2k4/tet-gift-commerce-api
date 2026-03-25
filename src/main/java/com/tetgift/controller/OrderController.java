@@ -48,6 +48,16 @@ public class OrderController {
                                                 orderService.getMyOrders(page, size)));
         }
 
+        @GetMapping
+        @Operation(summary = "Get all orders or my orders depending on default behavior or redirect")
+        public ResponseEntity<ResponseData<PageResponse<OrderResponse>>> getOrders(
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "10") int size) {
+                return ResponseEntity
+                                .ok(new ResponseData<>(HttpStatus.OK.value(), "All orders fetched",
+                                                orderService.getAllOrders(page, size)));
+        }
+
         @GetMapping("/all")
         @Operation(summary = "Get all orders (ADMIN)", description = "Get paginated list of all orders")
         public ResponseEntity<ResponseData<PageResponse<OrderResponse>>> getAllOrders(
