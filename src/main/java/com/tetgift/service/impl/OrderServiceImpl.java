@@ -32,6 +32,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -43,6 +46,7 @@ public class OrderServiceImpl implements OrderService {
     private final AddressRepository addressRepository;
     private final AuthenticationUtils authenticationUtils;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
@@ -97,7 +101,17 @@ public class OrderServiceImpl implements OrderService {
                     }
                     componentProduct.setStock(componentProduct.getStock() - totalNeeded);
                 }
-                price = bundle.getPrice();
+                if (Boolean.TRUE.equals(cartItem.getIsCustomCombo()) && cartItem.getCustomComboData() != null) {
+                    try {
+                        JsonNode comboData = objectMapper.readTree(cartItem.getCustomComboData());
+                        price = comboData.has("totalPrice") ? new BigDecimal(comboData.get("totalPrice").asText()) : bundle.getPrice();
+                    } catch (Exception e) {
+                        log.error("Lỗi parse customComboData", e);
+                        price = bundle.getPrice();
+                    }
+                } else {
+                    price = bundle.getPrice();
+                }
             } else {
                 continue;
             }
@@ -280,9 +294,22 @@ public class OrderServiceImpl implements OrderService {
     private OrderResponse toResponse(OrderEntity order) {
         List<OrderItemResponse> items = order.getOrderItems().stream()
                 .map(item -> {
-                    String name = "PRODUCT".equals(item.getItemType()) && item.getProduct() != null
-                            ? item.getProduct().getName()
-                            : (item.getBundle() != null ? item.getBundle().getName() : "Unknown");
+                    String name = "Unknown";
+                    if ("PRODUCT".equals(item.getItemType()) && item.getProduct() != null) {
+                        name = item.getProduct().getName();
+                    } else if ("BUNDLE".equals(item.getItemType()) && item.getBundle() != null) {
+                        if (Boolean.TRUE.equals(item.getIsCustomCombo()) && item.getCustomComboData() != null) {
+                            try {
+                                JsonNode comboData = objectMapper.readTree(item.getCustomComboData());
+                                name = comboData.has("name") ? comboData.get("name").asText() : "Custom Combo";
+                            } catch (Exception e) {
+                                name = item.getBundle().getName();
+                            }
+                        } else {
+                            name = item.getBundle().getName();
+                        }
+                    }
+                    
                     return OrderItemResponse.builder()
                             .id(item.getId())
                             .itemType(item.getItemType())
