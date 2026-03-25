@@ -1,5 +1,7 @@
 package com.tetgift.service.impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tetgift.dto.request.CartItemRequest;
 import com.tetgift.dto.response.CartItemResponse;
 import com.tetgift.dto.response.CartResponse;
@@ -28,6 +30,7 @@ public class CartServiceImpl implements CartService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
+    private final ObjectMapper objectMapper;
     private final BundleRepository bundleRepository;
     private final AuthenticationUtils authenticationUtils;
 
@@ -78,13 +81,17 @@ public class CartServiceImpl implements CartService {
             BundleEntity bundle = bundleRepository.findByIdAndIsActiveTrue(request.getBundleId())
                     .orElseThrow(() -> new ResourceNotFoundException("Bundle not found: " + request.getBundleId()));
 
-            // Check if same bundle already exists in cart
-            CartItemEntity existingItem = cart.getCartItems().stream()
-                    .filter(ci -> "BUNDLE".equals(ci.getItemType())
-                            && ci.getBundle() != null
-                            && ci.getBundle().getId().equals(request.getBundleId()))
-                    .findFirst()
-                    .orElse(null);
+            // Check if same bundle already exists in cart (only if not custom combo)
+            CartItemEntity existingItem = null;
+            if (!Boolean.TRUE.equals(request.getIsCustomCombo())) {
+                existingItem = cart.getCartItems().stream()
+                        .filter(ci -> "BUNDLE".equals(ci.getItemType())
+                                && ci.getBundle() != null
+                                && !Boolean.TRUE.equals(ci.getIsCustomCombo())
+                                && ci.getBundle().getId().equals(request.getBundleId()))
+                        .findFirst()
+                        .orElse(null);
+            }
 
             if (existingItem != null) {
                 existingItem.setQuantity(existingItem.getQuantity() + quantityToAdd);
@@ -182,9 +189,20 @@ public class CartServiceImpl implements CartService {
             price = item.getProduct().getPrice();
             itemId = item.getProduct().getId();
         } else if ("BUNDLE".equals(item.getItemType()) && item.getBundle() != null) {
-            name = item.getBundle().getName();
-            price = item.getBundle().getPrice();
             itemId = item.getBundle().getId();
+            if (Boolean.TRUE.equals(item.getIsCustomCombo()) && item.getCustomComboData() != null) {
+                try {
+                    JsonNode comboNode = objectMapper.readTree(item.getCustomComboData());
+                    name = comboNode.has("name") ? comboNode.get("name").asText() : "Custom Combo";
+                    price = comboNode.has("totalPrice") ? new BigDecimal(comboNode.get("totalPrice").asText()) : item.getBundle().getPrice();
+                } catch (Exception e) {
+                    name = item.getBundle().getName();
+                    price = item.getBundle().getPrice();
+                }
+            } else {
+                name = item.getBundle().getName();
+                price = item.getBundle().getPrice();
+            }
         } else {
             name = "Unknown";
             price = BigDecimal.ZERO;
