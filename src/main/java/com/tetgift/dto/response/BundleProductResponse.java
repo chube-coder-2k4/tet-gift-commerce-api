@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @Builder
@@ -13,4 +14,6 @@ public class BundleProductResponse {
     private String productName;
     private BigDecimal productPrice;
     private Integer quantity;
+
+    List<ProductImageResponse> images;
 }
