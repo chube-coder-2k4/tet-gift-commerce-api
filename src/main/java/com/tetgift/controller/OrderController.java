@@ -38,7 +38,7 @@ public class OrderController {
                                                 orderService.getOrderById(id)));
         }
 
-        @GetMapping
+        @GetMapping("/my-orders")
         @Operation(summary = "Get my orders", description = "Get paginated list of current user's orders")
         public ResponseEntity<ResponseData<PageResponse<OrderResponse>>> getMyOrders(
                         @RequestParam(defaultValue = "0") int page,
