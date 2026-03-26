@@ -31,5 +31,15 @@ public class UploadController {
         return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Upload successful",
                 cloudinaryService.uploadFile(file, folder)));
     }
+
+    @Operation(summary = "Upload any file (including music)", description = "Upload MP3/audio file to Cloudinary")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping(value = "/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ResponseData<String>> uploadFile(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(value = "folder", defaultValue = "music") String folder) throws IOException {
+        return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Upload successful",
+                cloudinaryService.uploadMusicFile(file, folder)));
+    }
 }
 

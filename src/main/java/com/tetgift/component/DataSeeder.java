@@ -66,7 +66,7 @@ public class DataSeeder implements CommandLineRunner {
                     .isActive(true)
                     .build());
 
-           // Regular users
+            // Regular users
             for (int i = 1; i <= 5; i++) {
                 users.add(Users.builder()
                         .fullName("User " + i)
@@ -137,16 +137,16 @@ public class DataSeeder implements CommandLineRunner {
                     .build());
 
             products.add(ProductEntity.builder()
-                     .name("Giỏ Quà Tết Thịnh Vượng")
-                     .description("Giỏ quà cao cấp với yến sào và đông trùng hạ thảo.")
-                     .price(new BigDecimal("2500000"))
-                     .stock(50)
-                     .category(gioQua)
-                     .isActive(true)
-                     .manufactureDate(LocalDate.now().minusMonths(1))
-                     .expDate(LocalDate.now().plusMonths(12))
-                     .image("https://res.cloudinary.com/dfupyxrmr/image/upload/v1/products/sample2")
-                     .build());
+                    .name("Giỏ Quà Tết Thịnh Vượng")
+                    .description("Giỏ quà cao cấp với yến sào và đông trùng hạ thảo.")
+                    .price(new BigDecimal("2500000"))
+                    .stock(50)
+                    .category(gioQua)
+                    .isActive(true)
+                    .manufactureDate(LocalDate.now().minusMonths(1))
+                    .expDate(LocalDate.now().plusMonths(12))
+                    .image("https://res.cloudinary.com/dfupyxrmr/image/upload/v1/products/sample2")
+                    .build());
 
             // Products for 'Rượu Vang'
             products.add(ProductEntity.builder()
@@ -161,7 +161,7 @@ public class DataSeeder implements CommandLineRunner {
                     .image("https://res.cloudinary.com/dfupyxrmr/image/upload/v1/products/sample3")
                     .build());
 
-             products.add(ProductEntity.builder()
+            products.add(ProductEntity.builder()
                     .name("Rượu Vang Pháp Bordeaux")
                     .description("Hương vị đậm đà, sang trọng.")
                     .price(new BigDecimal("1200000"))

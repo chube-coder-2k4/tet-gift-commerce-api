@@ -67,6 +67,19 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     }
 
     @Override
+    public String uploadMusicFile(MultipartFile file, String folder) throws IOException {
+        if (file == null || file.isEmpty()) throw new IllegalArgumentException("File cannot be empty");
+        // Cloudinary uses 'video' resource_type for audio/video files
+        Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
+                "folder", folder,
+                "resource_type", "video"
+        ));
+        String secureUrl = (String) uploadResult.get("secure_url");
+        log.info("Music uploaded to Cloudinary: folder={}, url={}", folder, secureUrl);
+        return secureUrl;
+    }
+
+    @Override
     public void validateImageFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File cannot be empty");
