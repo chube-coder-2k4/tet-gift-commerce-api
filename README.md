@@ -112,7 +112,7 @@ src/main/java/com/tetgift
 2. **Environment Config:**
    - Copy file mẫu và cung cấp thông số môi trường của bạn:
      ```bash
-     cp .env.example .env
+     cp .env .env
      ```
    - Cần điền các thông tin quan trọng hệ thống như: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `REDIS_HOST`, `GOOGLE_CLIENT_ID`, `GEMINI_API_KEY`, `VNPAY_TMN_CODE`, `CLOUDINARY_API_KEY`...
 3. **Run with Docker Compose:**
