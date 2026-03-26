@@ -68,11 +68,17 @@ public class InvoiceServiceImpl implements InvoiceService {
         try {
             Map<?, ?> uploadResult = cloudinary.uploader().upload(pdfBytes, ObjectUtils.asMap(
                     "folder", "invoices",
-                    "resource_type", "raw",
+                    "resource_type", "image",
                     "public_id", invoiceNumber,
                     "format", "pdf"
             ));
             pdfUrl = (String) uploadResult.get("secure_url");
+            
+            // Inject fl_attachment to force browser download and bypass iframe/CORS issues
+            if (pdfUrl != null && pdfUrl.contains("/upload/")) {
+                pdfUrl = pdfUrl.replace("/upload/", "/upload/fl_attachment/");
+            }
+            
             publicId = (String) uploadResult.get("public_id");
             log.info("Invoice PDF uploaded to Cloudinary: {}", pdfUrl);
         } catch (Exception e) {
