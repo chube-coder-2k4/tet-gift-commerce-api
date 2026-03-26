@@ -20,6 +20,8 @@ import com.tetgift.service.OrderService;
 import com.tetgift.util.AuthenticationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,8 +30,13 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -377,6 +384,104 @@ public class OrderServiceImpl implements OrderService {
 
         log.info("Refund confirmed for order {}", orderId);
         return toResponse(updated);
+    }
+
+    @Override
+    public byte[] exportRefundOrders(LocalDateTime startDateTime, LocalDateTime endDateTime, String format) {
+        List<OrderEntity> orders = orderRepository.findByStatusAndCreatedAtBetween(
+                OrderStatus.CANCELLED_PENDING_REFUND, startDateTime, endDateTime);
+
+        if ("csv".equalsIgnoreCase(format)) {
+            return generateCsv(orders);
+        } else {
+            return generateExcel(orders);
+        }
+    }
+
+    private byte[] generateExcel(List<OrderEntity> orders) {
+        try (Workbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+            Sheet sheet = workbook.createSheet("Refund Orders");
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerStyle.setFont(headerFont);
+
+            String[] headers = {
+                    "Order ID", "Customer Name", "Customer Email",
+                    "Customer Phone", "Total Amount", "Order Date",
+                    "Bank Name", "Bank Account", "Account Holder"
+            };
+
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+
+            int rowNum = 1;
+            for (OrderEntity order : orders) {
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(order.getId());
+                row.createCell(1).setCellValue(order.getUser().getFullName() != null ? order.getUser().getFullName() : "");
+                row.createCell(2).setCellValue(order.getUser().getEmail() != null ? order.getUser().getEmail() : "");
+                row.createCell(3).setCellValue(order.getUser().getPhone() != null ? order.getUser().getPhone() : "");
+                row.createCell(4).setCellValue(order.getTotalAmount().doubleValue());
+                row.createCell(5).setCellValue(order.getCreatedAt().format(formatter));
+                row.createCell(6).setCellValue(order.getRefundBankName() != null ? order.getRefundBankName() : "");
+                row.createCell(7).setCellValue(order.getRefundBankAccount() != null ? order.getRefundBankAccount() : "");
+                row.createCell(8).setCellValue(order.getRefundAccountHolder() != null ? order.getRefundAccountHolder() : "");
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            workbook.write(out);
+            return out.toByteArray();
+        } catch (Exception e) {
+            log.error("Lỗi khi xuất file Excel", e);
+            throw new RuntimeException("Failed to generate Excel file", e);
+        }
+    }
+
+    private byte[] generateCsv(List<OrderEntity> orders) {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+             PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8))) {
+
+            out.write(0xEF);
+            out.write(0xBB);
+            out.write(0xBF);
+
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+            writer.println("Order ID,Customer Name,Customer Email,Total Amount,Order Date,Bank Name,Bank Account,Account Holder");
+
+            for (OrderEntity order : orders) {
+                writer.printf("%d,\"%s\",\"%s\",%s,\"%s\",\"%s\",\"%s\",\"%s\"%n",
+                        order.getId(),
+                        escapeCsv(order.getUser().getFullName()),
+                        escapeCsv(order.getUser().getEmail()),
+                        order.getTotalAmount().toPlainString(),
+                        order.getCreatedAt().format(formatter),
+                        escapeCsv(order.getRefundBankName()),
+                        escapeCsv(order.getRefundBankAccount()),
+                        escapeCsv(order.getRefundAccountHolder()));
+            }
+            writer.flush();
+            return out.toByteArray();
+        } catch (Exception e) {
+            log.error("Lỗi khi xuất file CSV", e);
+            throw new RuntimeException("Failed to generate CSV file", e);
+        }
+    }
+
+    private String escapeCsv(String value) {
+        if (value == null) return "";
+        return value.replace("\"", "\"\"");
     }
 
     private OrderResponse toResponse(OrderEntity order) {

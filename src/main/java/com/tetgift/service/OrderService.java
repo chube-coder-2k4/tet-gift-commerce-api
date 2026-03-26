@@ -5,6 +5,8 @@ import com.tetgift.dto.request.RefundRequest;
 import com.tetgift.dto.response.OrderResponse;
 import com.tetgift.dto.response.PageResponse;
 
+import java.time.LocalDateTime;
+
 public interface OrderService {
     OrderResponse createOrder(OrderRequest request);
 
@@ -23,5 +25,8 @@ public interface OrderService {
     PageResponse<OrderResponse> getRefundOrders(int page, int size);
 
     OrderResponse confirmRefund(Long orderId);
+
+    byte[] exportRefundOrders(LocalDateTime startDate, LocalDateTime endDate, String format);
+
 }
 
