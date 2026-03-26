@@ -23,15 +23,14 @@ spring:
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
   mail:
-    host: ${MAIL_HOST}
-    port: ${MAIL_PORT}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    host: smtp.gmail.com
+    port: 587
+    username: qhuyddbmt123@gmail.com
+    password: lbyjpyzajcrjkmjz
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
       mail.smtp.ssl.trust: smtp.gmail.com
-    from: ${MAIL_FROM}
   security:
     oauth2:
       client:
@@ -41,7 +40,7 @@ spring:
             client-secret: ${GOOGLE_CLIENT_SECRET}
             scope: openid,profile,email
             authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/google"
+            redirect-uri: "https://api.quanghuycoder.id.vn/login/oauth2/code/google"
 #          keycloak:
 #            client-id: ${KEYCLOAK_CLIENT_ID}
 #            client-secret: ${KEYCLOAK_CLIENT_SECRET}
@@ -67,14 +66,14 @@ spring:
         transport: rest
         chat:
           options:
-            model: gemma-3-4b-it
+            model: gemini-2.5-flash
             temperature: 0.7
     transformers:
       embedding:
         onnx:
-          modelUri: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx
+          modelUri: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx?download=true
         tokenizer:
-          uri: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json
+          uri: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json?download=true
 
 
 management:
@@ -98,6 +97,7 @@ vnpay:
   api-url: ${VNPAY_API_URL}
   return-url: ${VNPAY_RETURN_URL}
   ipn-url: ${VNPAY_IPN_URL}
+  frontend-result-url: ${VNPAY_FRONTEND_RESULT_URL}
 jwt:
   timeout: ${JWT_TIME_OUT}
   secretKey: ${JWT_SECRET}
@@ -106,11 +106,11 @@ jwt:
   resetKey: ${JWT_RESET_PASSWORD_SECRET}
 
 app:
-  frontend-url: http://localhost:3000
-  cookie-secure: false
+  frontend-url: https://store.quanghuycoder.id.vn
+  cookie-secure: true
 
 mail:
-  from: ${MAIL_FROM}
+  from: qhuyddbmt123@gmail.com
 
 logging:
   level:

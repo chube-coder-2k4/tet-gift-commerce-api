@@ -36,4 +36,11 @@ public class OrderItemEntity extends BaseEntity<Long> {
     @Column(nullable = false)
     @Builder.Default
     private Integer quantity = 1;
+
+    @Column(name = "is_custom_combo")
+    @Builder.Default
+    private Boolean isCustomCombo = false;
+
+    @Column(columnDefinition = "TEXT", name = "custom_combo_data")
+    private String customComboData;
 }

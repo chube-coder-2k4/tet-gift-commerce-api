@@ -1,5 +1,6 @@
 package com.tetgift.configuration;
 
+import com.tetgift.component.ChatbotRateLimitFilter;
 import com.tetgift.component.JwtAccessDeniedHandler;
 import com.tetgift.component.JwtAuthenticationEntryPoint;
 import com.tetgift.component.OAuth2SuccessHandler;
@@ -37,6 +38,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
         private final PreFilter preFilter;
+        private final ChatbotRateLimitFilter chatbotRateLimitFilter;
         private final UserDetailsService userDetailsService;
         private final PasswordEncoder passwordEncoder;
         private final CustomOAuth2UserService customOAuth2UserService;
@@ -51,6 +53,7 @@ public class SecurityConfig {
                         "/api/v1/payments/vnpay-callback",
                         "/api/v1/payments/vnpay-ipn",
                         "/api/v1/chatbot/chat",
+                        "/api/v1/chatbot/chat/stream",
                         "/api/v1/chatbot/history/**",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
@@ -73,6 +76,9 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/blogs/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/blog-topics/**").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/v1/settings/**").permitAll()
+
+                                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                                 // Everything else requires authentication
                                                 .anyRequest().authenticated())
                                 .exceptionHandling(ex -> ex
@@ -86,6 +92,7 @@ public class SecurityConfig {
                                                                 .oidcUserService(customOidcUserService))
                                                 .successHandler(oAuth2SuccessHandler))
                                 .authenticationProvider(authenticationProvider())
+                                .addFilterBefore(chatbotRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                                 .addFilterBefore(preFilter, UsernamePasswordAuthenticationFilter.class);
 
                 return http.build();
@@ -109,7 +116,8 @@ public class SecurityConfig {
                 configuration.setAllowedOrigins(List.of(
                                 "http://localhost:3000",
                                 "http://localhost:5173",
-                                "https://shophuypro.store"));
+                                "https://tet-gift-commerce-frontend.vercel.app",
+                                "https://store.quanghuycoder.id.vn"));
                 configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                 configuration.setAllowedHeaders(List.of("*"));
                 configuration.setAllowCredentials(true);

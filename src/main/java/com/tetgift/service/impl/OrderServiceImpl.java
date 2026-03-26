@@ -33,6 +33,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -44,6 +47,7 @@ public class OrderServiceImpl implements OrderService {
     private final AddressRepository addressRepository;
     private final AuthenticationUtils authenticationUtils;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
@@ -52,7 +56,7 @@ public class OrderServiceImpl implements OrderService {
         if (user == null)
             throw new ForBiddenException("User not authenticated");
 
-        CartEntity cart = cartRepository.findByUserId(user.getId())
+        CartEntity cart = cartRepository.findWithItemsByUserId(user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
 
         if (cart.getCartItems().isEmpty()) {
@@ -82,9 +86,33 @@ public class OrderServiceImpl implements OrderService {
         for (CartItemEntity cartItem : cart.getCartItems()) {
             BigDecimal price;
             if ("PRODUCT".equals(cartItem.getItemType()) && cartItem.getProduct() != null) {
-                price = cartItem.getProduct().getPrice();
+                ProductEntity product = cartItem.getProduct();
+                if (product.getStock() < cartItem.getQuantity()) {
+                    throw new InvalidDataException("Sản phẩm " + product.getName() + " không đủ số lượng trong kho");
+                }
+                product.setStock(product.getStock() - cartItem.getQuantity());
+                price = product.getPrice();
             } else if ("BUNDLE".equals(cartItem.getItemType()) && cartItem.getBundle() != null) {
-                price = cartItem.getBundle().getPrice();
+                BundleEntity bundle = cartItem.getBundle();
+                for (BundleProductEntity bundleProduct : bundle.getBundleProducts()) {
+                    ProductEntity componentProduct = bundleProduct.getProduct();
+                    int totalNeeded = cartItem.getQuantity() * bundleProduct.getQuantity();
+                    if (componentProduct.getStock() < totalNeeded) {
+                        throw new InvalidDataException("Sản phẩm " + componentProduct.getName() + " (trong " + bundle.getName() + ") không đủ số lượng trong kho");
+                    }
+                    componentProduct.setStock(componentProduct.getStock() - totalNeeded);
+                }
+                if (Boolean.TRUE.equals(cartItem.getIsCustomCombo()) && cartItem.getCustomComboData() != null) {
+                    try {
+                        JsonNode comboData = objectMapper.readTree(cartItem.getCustomComboData());
+                        price = comboData.has("totalPrice") ? new BigDecimal(comboData.get("totalPrice").asText()) : bundle.getPrice();
+                    } catch (Exception e) {
+                        log.error("Lỗi parse customComboData", e);
+                        price = bundle.getPrice();
+                    }
+                } else {
+                    price = bundle.getPrice();
+                }
             } else {
                 continue;
             }
@@ -96,12 +124,30 @@ public class OrderServiceImpl implements OrderService {
                     .bundle(cartItem.getBundle())
                     .priceSnapshot(price)
                     .quantity(cartItem.getQuantity())
+                    .isCustomCombo(cartItem.getIsCustomCombo())
+                    .customComboData(cartItem.getCustomComboData())
                     .build();
             orderItems.add(orderItem);
             totalAmount = totalAmount.add(price.multiply(BigDecimal.valueOf(cartItem.getQuantity())));
         }
 
-        // Apply discount
+        // ---- Subtotal (before any discounts) ----
+        BigDecimal subtotalBeforeDiscount = totalAmount;
+
+        // ---- Apply Tier Discount (automatic, based on order total) ----
+        int tierPercent = calculateTierDiscountPercent(totalAmount);
+        BigDecimal tierDiscountAmount = BigDecimal.ZERO;
+        if (tierPercent > 0) {
+            tierDiscountAmount = totalAmount
+                    .multiply(BigDecimal.valueOf(tierPercent))
+                    .divide(BigDecimal.valueOf(100), 0, java.math.RoundingMode.FLOOR);
+            totalAmount = totalAmount.subtract(tierDiscountAmount);
+            order.setTierDiscountPercent(tierPercent);
+            order.setTierDiscountAmount(tierDiscountAmount);
+            log.info("Applied tier discount: {}% = {} VND (subtotal: {})", tierPercent, tierDiscountAmount, subtotalBeforeDiscount);
+        }
+
+        // ---- Apply Discount Code (manual, user entered) ----
         if (request.getDiscountCode() != null && !request.getDiscountCode().isEmpty()) {
             DiscountEntity discount = discountRepository
                     .findByCodeAndIsActiveTrue(request.getDiscountCode().toUpperCase())
@@ -117,7 +163,8 @@ public class OrderServiceImpl implements OrderService {
             if (discount.getUsageLimit() != null && discount.getUsageCount() >= discount.getUsageLimit()) {
                 throw new InvalidDataException("Discount code has reached its usage limit");
             }
-            if (discount.getMinOrderAmount() != null && totalAmount.compareTo(discount.getMinOrderAmount()) < 0) {
+            // Min order check is against subtotal BEFORE tier discount
+            if (discount.getMinOrderAmount() != null && subtotalBeforeDiscount.compareTo(discount.getMinOrderAmount()) < 0) {
                 throw new InvalidDataException("Order total must be at least " + discount.getMinOrderAmount()
                         + " VND to use this discount code");
             }
@@ -335,9 +382,22 @@ public class OrderServiceImpl implements OrderService {
     private OrderResponse toResponse(OrderEntity order) {
         List<OrderItemResponse> items = order.getOrderItems().stream()
                 .map(item -> {
-                    String name = "PRODUCT".equals(item.getItemType()) && item.getProduct() != null
-                            ? item.getProduct().getName()
-                            : (item.getBundle() != null ? item.getBundle().getName() : "Unknown");
+                    String name = "Unknown";
+                    if ("PRODUCT".equals(item.getItemType()) && item.getProduct() != null) {
+                        name = item.getProduct().getName();
+                    } else if ("BUNDLE".equals(item.getItemType()) && item.getBundle() != null) {
+                        if (Boolean.TRUE.equals(item.getIsCustomCombo()) && item.getCustomComboData() != null) {
+                            try {
+                                JsonNode comboData = objectMapper.readTree(item.getCustomComboData());
+                                name = comboData.has("name") ? comboData.get("name").asText() : "Custom Combo";
+                            } catch (Exception e) {
+                                name = item.getBundle().getName();
+                            }
+                        } else {
+                            name = item.getBundle().getName();
+                        }
+                    }
+                    
                     return OrderItemResponse.builder()
                             .id(item.getId())
                             .itemType(item.getItemType())
@@ -345,6 +405,8 @@ public class OrderServiceImpl implements OrderService {
                             .priceSnapshot(item.getPriceSnapshot())
                             .quantity(item.getQuantity())
                             .subtotal(item.getPriceSnapshot().multiply(BigDecimal.valueOf(item.getQuantity())))
+                            .isCustomCombo(item.getIsCustomCombo())
+                            .customComboData(item.getCustomComboData())
                             .build();
                 }).toList();
 
@@ -352,6 +414,7 @@ public class OrderServiceImpl implements OrderService {
                 .id(order.getId())
                 .status(order.getStatus().name())
                 .totalAmount(order.getTotalAmount())
+                .subtotalBeforeDiscount(calculateSubtotal(order))
                 .customerName(order.getUser().getFullName())
                 .customerEmail(order.getUser().getEmail())
                 .receiverName(order.getReceiverName())
@@ -359,6 +422,8 @@ public class OrderServiceImpl implements OrderService {
                 .shippingAddress(order.getShippingAddress())
                 .discountCode(order.getDiscountCode())
                 .discountAmount(order.getDiscountAmount())
+                .tierDiscountPercent(order.getTierDiscountPercent())
+                .tierDiscountAmount(order.getTierDiscountAmount())
                 .vatCompanyName(order.getVatCompanyName())
                 .vatTaxCode(order.getVatTaxCode())
                 .vatPhone(order.getVatPhone())
@@ -370,5 +435,30 @@ public class OrderServiceImpl implements OrderService {
                 .items(items)
                 .createdAt(order.getCreatedAt())
                 .build();
+    }
+
+    /**
+     * Calculate tier discount percentage based on order subtotal.
+     * >= 50,000,000 -> 10%
+     * >= 30,000,000 ->  8%
+     * >= 15,000,000 ->  5%
+     * >= 10,000,000 ->  3%
+     * < 10,000,000  ->  0%
+     */
+    private int calculateTierDiscountPercent(BigDecimal subtotal) {
+        if (subtotal.compareTo(BigDecimal.valueOf(50_000_000)) >= 0) return 10;
+        if (subtotal.compareTo(BigDecimal.valueOf(30_000_000)) >= 0) return 8;
+        if (subtotal.compareTo(BigDecimal.valueOf(15_000_000)) >= 0) return 5;
+        if (subtotal.compareTo(BigDecimal.valueOf(10_000_000)) >= 0) return 3;
+        return 0;
+    }
+
+    /**
+     * Calculate subtotal from order items (before any discounts).
+     */
+    private BigDecimal calculateSubtotal(OrderEntity order) {
+        return order.getOrderItems().stream()
+                .map(item -> item.getPriceSnapshot().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

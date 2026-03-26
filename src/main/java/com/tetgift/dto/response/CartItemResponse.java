@@ -15,4 +15,6 @@ public class CartItemResponse {
     private BigDecimal itemPrice;
     private Integer quantity;
     private BigDecimal subtotal;
+    private Boolean isCustomCombo;
+    private String customComboData;
 }

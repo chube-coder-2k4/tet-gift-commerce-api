@@ -4,6 +4,7 @@ import com.tetgift.dto.request.BundleRequest;
 import com.tetgift.dto.response.BundleProductResponse;
 import com.tetgift.dto.response.BundleResponse;
 import com.tetgift.dto.response.PageResponse;
+import com.tetgift.dto.response.ProductImageResponse;
 import com.tetgift.exception.ProductNotFoundException;
 import com.tetgift.exception.ResourceNotFoundException;
 import com.tetgift.model.entity.BundleEntity;
@@ -25,7 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -51,16 +52,23 @@ public class BundleServiceImpl implements BundleService {
     private Long createBundleInternal(BundleRequest request, MultipartFile image) {
         try {
             BundleEntity bundle = bundleMapper.toEntity(request);
-            // Calculate total price if not custom
-            if (!request.isCustom()) {
-                List<ProductEntity> products = new ArrayList<>();
+            
+            // Link back bundle and replace detached products with managed products
+            if (bundle.getBundleProducts() != null) {
                 for (BundleProductEntity bundleProduct : bundle.getBundleProducts()) {
-                    ProductEntity product = productRepository.findByIdAndIsActiveTrue(bundleProduct.getProduct().getId())
-                            .orElseThrow(() -> new ProductNotFoundException("Product not found: " + bundleProduct.getProduct().getId()));
-                    products.add(product);
+                    bundleProduct.setBundle(bundle); // Link back
+                    if (bundleProduct.getProduct() != null && bundleProduct.getProduct().getId() != null) {
+                        ProductEntity product = productRepository.findById(bundleProduct.getProduct().getId())
+                                .orElseThrow(() -> new ProductNotFoundException("Product not found: " + bundleProduct.getProduct().getId()));
+                        bundleProduct.setProduct(product); // Replace detached product with fetched one
+                    }
                 }
-                BigDecimal totalPrice = products.stream()
-                        .map(ProductEntity::getPrice)
+            }
+
+            // Calculate total price if not custom
+            if (!request.isCustom() && bundle.getBundleProducts() != null) {
+                BigDecimal totalPrice = bundle.getBundleProducts().stream()
+                        .map(bp -> bp.getProduct().getPrice().multiply(BigDecimal.valueOf(bp.getQuantity())))
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
                 bundle.setPrice(totalPrice);
             }
@@ -143,9 +151,18 @@ public class BundleServiceImpl implements BundleService {
                                     .build();
                         }).toList();
                 bundle.getBundleProducts().addAll(bundleProducts);
+
+                // recalculate total price
+                if (!request.isCustom()) {
+                    BigDecimal totalPrice = bundleProducts.stream()
+                        .map(bp -> bp.getProduct().getPrice().multiply(BigDecimal.valueOf(bp.getQuantity())))
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    bundle.setPrice(totalPrice);
+                }
             }
 
-            return bundleRepository.save(bundle).getId();
+            BundleEntity updated = bundleRepository.save(bundle);
+            return updated.getId();
         } catch (IOException e) {
             throw new RuntimeException("Failed to upload image", e);
         }
@@ -162,14 +179,30 @@ public class BundleServiceImpl implements BundleService {
 
     private BundleResponse toResponse(BundleEntity bundle) {
         List<BundleProductResponse> products = bundle.getBundleProducts().stream()
-                .map(bp -> BundleProductResponse.builder()
-                        .id(bp.getId())
-                        .productId(bp.getProduct().getId())
-                        .productName(bp.getProduct().getName())
-                        .productPrice(bp.getProduct().getPrice())
-                        .quantity(bp.getQuantity())
-                        .build())
-                .toList();
+                .map(bp -> {
+                    ProductEntity product = bp.getProduct();
+                    List<ProductImageResponse> images = Collections.emptyList();
+                    if (product != null && product.getProductImages() != null) {
+                        images = product.getProductImages().stream()
+                                .map(img -> ProductImageResponse.builder()
+                                        .id(img.getId())
+                                        .imageUrl(img.getImageUrl())
+                                        .imageType(img.getImageType())
+                                        .publicId(img.getPublicId())
+                                        .isPrimary(img.isPrimary())
+                                        .build())
+                                .toList();
+                    }
+
+                    return BundleProductResponse.builder()
+                            .id(bp.getId())
+                            .productId(product != null ? product.getId() : null)
+                            .productName(product != null ? product.getName() : null)
+                            .productPrice(product != null ? product.getPrice() : null)
+                            .quantity(bp.getQuantity())
+                            .images(images)
+                            .build();
+                }).toList();
 
         return BundleResponse.builder()
                 .id(bundle.getId())

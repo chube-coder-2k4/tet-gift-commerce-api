@@ -19,6 +19,9 @@ public interface BundleMapper {
     @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "image", ignore = true)
     @Mapping(target = "totalPrice", ignore = true)
+    @Mapping(target = "stock", ignore = true)
+    @Mapping(target = "version", ignore = true)
+    @Mapping(target = "active", ignore = true)
     @Mapping(target = "bundleProducts", source = "products")
     BundleEntity toEntity(BundleRequest request);
 
@@ -39,6 +42,8 @@ public interface BundleMapper {
     @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "image", ignore = true)
     @Mapping(target = "totalPrice", ignore = true)
+    @Mapping(target = "stock", ignore = true)
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "active", ignore = true)
     @Mapping(target = "bundleProducts", ignore = true)
     void updateEntity(@MappingTarget BundleEntity entity, BundleRequest request);

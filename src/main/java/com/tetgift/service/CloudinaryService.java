@@ -29,6 +29,12 @@ public interface CloudinaryService {
     void deleteFile(String publicId) throws IOException;
 
     /**
+     * Upload music file (MP3) to specific folder
+     */
+    String uploadMusicFile(MultipartFile file, String folder) throws IOException;
+
+    /**
+
      * Validate file before upload (type, size)
      */
     void validateImageFile(MultipartFile file);

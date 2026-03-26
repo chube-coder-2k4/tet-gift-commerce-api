@@ -59,7 +59,7 @@ public class ChatbotResponse {
         return ChatbotResponse.builder()
                 .message(fallbackMessage)
                 .timestamp(LocalDateTime.now())
-                .success(true)
+                .success(false)
                 .detectedIntent("FALLBACK")
                 .build();
     }

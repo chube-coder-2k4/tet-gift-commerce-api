@@ -14,4 +14,7 @@ public class CartItemRequest {
 
     @Positive(message = "Quantity must be positive")
     private Integer quantity = 1;
+
+    private Boolean isCustomCombo = false;
+    private String customComboData;
 }

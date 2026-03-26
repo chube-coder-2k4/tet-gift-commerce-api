@@ -14,4 +14,6 @@ public class OrderItemResponse {
     private BigDecimal priceSnapshot;
     private Integer quantity;
     private BigDecimal subtotal;
+    private Boolean isCustomCombo;
+    private String customComboData;
 }
