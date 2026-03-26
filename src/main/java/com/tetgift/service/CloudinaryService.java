@@ -34,6 +34,7 @@ public interface CloudinaryService {
     String uploadMusicFile(MultipartFile file, String folder) throws IOException;
 
     /**
+
      * Validate file before upload (type, size)
      */
     void validateImageFile(MultipartFile file);
