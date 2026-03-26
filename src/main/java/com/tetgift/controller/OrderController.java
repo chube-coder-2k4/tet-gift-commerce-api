@@ -1,6 +1,7 @@
 package com.tetgift.controller;
 
 import com.tetgift.dto.request.OrderRequest;
+import com.tetgift.dto.request.RefundRequest;
 import com.tetgift.dto.response.OrderResponse;
 import com.tetgift.dto.response.PageResponse;
 import com.tetgift.dto.response.ResponseData;
@@ -8,6 +9,7 @@ import com.tetgift.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -72,4 +74,17 @@ public class OrderController {
                                 .ok(new ResponseData<>(HttpStatus.OK.value(), "Order cancelled",
                                                 orderService.cancelOrder(id)));
         }
+
+        @PutMapping("/{id}/cancel-refund")
+        @Operation(summary = "Cancel paid order with refund (USER)",
+                        description = "Cancel a paid order and request refund with bank info")
+        public ResponseEntity<ResponseData<OrderResponse>> cancelOrderWithRefund(
+                        @PathVariable Long id,
+                        @Valid @RequestBody RefundRequest request) {
+                return ResponseEntity
+                                .ok(new ResponseData<>(HttpStatus.OK.value(),
+                                                "Order cancelled. Refund is pending.",
+                                                orderService.cancelOrderWithRefund(id, request)));
+        }
 }
+

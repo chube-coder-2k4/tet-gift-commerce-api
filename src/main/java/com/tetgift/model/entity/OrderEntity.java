@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,6 +63,19 @@ public class OrderEntity extends BaseEntity<Long> {
     @Column(name = "discount_amount")
     @Builder.Default
     private BigDecimal discountAmount = BigDecimal.ZERO;
+
+    // Refund bank info
+    @Column(name = "refund_bank_name", length = 100)
+    private String refundBankName;
+
+    @Column(name = "refund_bank_account", length = 50)
+    private String refundBankAccount;
+
+    @Column(name = "refund_account_holder", length = 100)
+    private String refundAccountHolder;
+
+    @Column(name = "refund_confirmed_at")
+    private LocalDateTime refundConfirmedAt;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

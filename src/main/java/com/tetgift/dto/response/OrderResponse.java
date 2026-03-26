@@ -33,6 +33,12 @@ public class OrderResponse {
     private String vatPhone;
     private String vatAddress;
 
+    // Refund info
+    private String refundBankName;
+    private String refundBankAccount;
+    private String refundAccountHolder;
+    private LocalDateTime refundConfirmedAt;
+
     private List<OrderItemResponse> items;
     private LocalDateTime createdAt;
 }

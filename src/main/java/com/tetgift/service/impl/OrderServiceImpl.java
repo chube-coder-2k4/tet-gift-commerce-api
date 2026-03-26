@@ -1,6 +1,7 @@
 package com.tetgift.service.impl;
 
 import com.tetgift.dto.request.OrderRequest;
+import com.tetgift.dto.request.RefundRequest;
 import com.tetgift.dto.response.OrderItemResponse;
 import com.tetgift.dto.response.OrderResponse;
 import com.tetgift.dto.response.PageResponse;
@@ -244,6 +245,93 @@ public class OrderServiceImpl implements OrderService {
         return toResponse(updated);
     }
 
+    @Override
+    @Transactional
+    public OrderResponse cancelOrderWithRefund(Long orderId, RefundRequest request) {
+        Users user = authenticationUtils.getCurrentUser();
+        if (user == null)
+            throw new ForBiddenException("User not authenticated");
+
+        OrderEntity order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
+
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new ForBiddenException("You can only cancel your own orders");
+        }
+
+        if (order.getStatus() != OrderStatus.PAID) {
+            throw new InvalidDataException(
+                    "Only paid orders can be cancelled with refund. Current status: " + order.getStatus());
+        }
+
+        order.setStatus(OrderStatus.CANCELLED_PENDING_REFUND);
+        order.setRefundBankName(request.getBankName());
+        order.setRefundBankAccount(request.getBankAccount());
+        order.setRefundAccountHolder(request.getAccountHolder());
+
+        OrderEntity updated = orderRepository.save(order);
+
+        // Notify via WebSocket
+        try {
+            messagingTemplate.convertAndSendToUser(
+                    order.getUser().getUsername(),
+                    "/queue/order-status",
+                    "Order #" + orderId + " has been cancelled. Refund is pending.");
+        } catch (Exception e) {
+            log.warn("Failed to send WebSocket notification: {}", e.getMessage());
+        }
+
+        log.info("Order {} cancelled with refund request by user {}", orderId, user.getUsername());
+        return toResponse(updated);
+    }
+
+    @Override
+    public PageResponse<OrderResponse> getRefundOrders(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<OrderEntity> orderPage = orderRepository.findByStatus(OrderStatus.CANCELLED_PENDING_REFUND, pageable);
+
+        List<OrderResponse> responses = orderPage.getContent().stream()
+                .map(this::toResponse)
+                .toList();
+
+        return PageResponse.<OrderResponse>builder()
+                .data(responses)
+                .pageNo(orderPage.getNumber())
+                .pageSize(orderPage.getSize())
+                .totalItems(orderPage.getTotalElements())
+                .totalPages(orderPage.getTotalPages())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse confirmRefund(Long orderId) {
+        OrderEntity order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
+
+        if (order.getStatus() != OrderStatus.CANCELLED_PENDING_REFUND) {
+            throw new InvalidDataException(
+                    "Order is not in pending refund status. Current status: " + order.getStatus());
+        }
+
+        order.setStatus(OrderStatus.CANCELLED_REFUNDED);
+        order.setRefundConfirmedAt(LocalDateTime.now());
+        OrderEntity updated = orderRepository.save(order);
+
+        // Notify customer via WebSocket
+        try {
+            messagingTemplate.convertAndSendToUser(
+                    order.getUser().getUsername(),
+                    "/queue/order-status",
+                    "Order #" + orderId + " refund has been completed.");
+        } catch (Exception e) {
+            log.warn("Failed to send WebSocket notification: {}", e.getMessage());
+        }
+
+        log.info("Refund confirmed for order {}", orderId);
+        return toResponse(updated);
+    }
+
     private OrderResponse toResponse(OrderEntity order) {
         List<OrderItemResponse> items = order.getOrderItems().stream()
                 .map(item -> {
@@ -275,6 +363,10 @@ public class OrderServiceImpl implements OrderService {
                 .vatTaxCode(order.getVatTaxCode())
                 .vatPhone(order.getVatPhone())
                 .vatAddress(order.getVatAddress())
+                .refundBankName(order.getRefundBankName())
+                .refundBankAccount(order.getRefundBankAccount())
+                .refundAccountHolder(order.getRefundAccountHolder())
+                .refundConfirmedAt(order.getRefundConfirmedAt())
                 .items(items)
                 .createdAt(order.getCreatedAt())
                 .build();
