@@ -207,6 +207,13 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public OrderResponse getOrderByCode(String orderCode) {
+        OrderEntity order = orderRepository.findByOrderCode(orderCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with code: " + orderCode));
+        return toResponse(order);
+    }
+
+    @Override
     public PageResponse<OrderResponse> getMyOrders(int page, int size) {
         Users user = authenticationUtils.getCurrentUser();
         if (user == null)
@@ -324,6 +331,7 @@ public class OrderServiceImpl implements OrderService {
 
         return OrderResponse.builder()
                 .id(order.getId())
+                .orderCode(order.getOrderCode())
                 .status(order.getStatus().name())
                 .totalAmount(order.getTotalAmount())
                 .subtotalBeforeDiscount(calculateSubtotal(order))

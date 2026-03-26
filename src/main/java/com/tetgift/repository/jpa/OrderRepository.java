@@ -7,9 +7,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
     Page<OrderEntity> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
+
+    Optional<OrderEntity> findByOrderCode(String orderCode);
 
     @Query(value = "SELECT new com.tetgift.dto.response.TopCustomerResponse(u.id, u.fullName, u.email, COUNT(o), SUM(o.totalAmount)) " +
            "FROM OrderEntity o JOIN o.user u " +
