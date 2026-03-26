@@ -9,8 +9,10 @@ import com.tetgift.exception.ResourceNotFoundException;
 import com.tetgift.model.entity.InvoiceEntity;
 import com.tetgift.model.entity.OrderEntity;
 import com.tetgift.model.entity.OrderItemEntity;
+import com.tetgift.model.entity.PaymentEntity;
 import com.tetgift.repository.jpa.InvoiceRepository;
 import com.tetgift.repository.jpa.OrderRepository;
+import com.tetgift.repository.jpa.PaymentRepository;
 import com.tetgift.service.InvoiceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +36,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
     private final OrderRepository orderRepository;
+    private final PaymentRepository paymentRepository;
     private final TemplateEngine templateEngine;
     private final Cloudinary cloudinary;
 
@@ -68,11 +71,17 @@ public class InvoiceServiceImpl implements InvoiceService {
         try {
             Map<?, ?> uploadResult = cloudinary.uploader().upload(pdfBytes, ObjectUtils.asMap(
                     "folder", "invoices",
-                    "resource_type", "raw",
+                    "resource_type", "image",
                     "public_id", invoiceNumber,
                     "format", "pdf"
             ));
             pdfUrl = (String) uploadResult.get("secure_url");
+            
+            // Inject fl_attachment to force browser download and bypass iframe/CORS issues
+            if (pdfUrl != null && pdfUrl.contains("/upload/")) {
+                pdfUrl = pdfUrl.replace("/upload/", "/upload/fl_attachment/");
+            }
+            
             publicId = (String) uploadResult.get("public_id");
             log.info("Invoice PDF uploaded to Cloudinary: {}", pdfUrl);
         } catch (Exception e) {
@@ -148,8 +157,21 @@ public class InvoiceServiceImpl implements InvoiceService {
         Context ctx = new Context(Locale.forLanguageTag("vi"));
 
         ctx.setVariable("invoiceNumber", invoiceNumber);
+        ctx.setVariable("orderCode", order.getOrderCode() != null ? order.getOrderCode() : "#" + order.getId());
         ctx.setVariable("orderId", order.getId());
         ctx.setVariable("issuedDate", LocalDateTime.now().format(DATE_FMT));
+
+        // Customer Info
+        ctx.setVariable("customerName", order.getUser().getFullName());
+        ctx.setVariable("customerEmail", order.getUser().getEmail());
+
+        // Payment Info
+        String paymentMethodStr = "COD";
+        Optional<PaymentEntity> paymentOpt = paymentRepository.findByOrderId(order.getId());
+        if (paymentOpt.isPresent()) {
+            paymentMethodStr = paymentOpt.get().getMethod().name();
+        }
+        ctx.setVariable("paymentMethod", paymentMethodStr);
 
         // Company/VAT info
         ctx.setVariable("companyName", order.getVatCompanyName());

@@ -20,6 +20,9 @@ import java.util.List;
 @Builder
 public class OrderEntity extends BaseEntity<Long> {
 
+    @Column(name = "order_code", unique = true, length = 50)
+    private String orderCode;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private Users user;
@@ -88,4 +91,12 @@ public class OrderEntity extends BaseEntity<Long> {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrderItemEntity> orderItems = new ArrayList<>();
+
+    @PrePersist
+    public void generateOrderCode() {
+        if (this.orderCode == null) {
+            int randomNum = 1000 + (int) (Math.random() * 9000);
+            this.orderCode = "SBA-" + System.currentTimeMillis() + "-" + randomNum;
+        }
+    }
 }

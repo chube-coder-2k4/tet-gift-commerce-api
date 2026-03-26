@@ -40,6 +40,16 @@ public class PaymentController {
                         paymentService.createPayment(request)));
     }
 
+    @PostMapping("/{orderId}/retry-vnpay")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Retry VNPay Payment", description = "Retry failed or uncompleted VNPay payment for an order")
+    public ResponseEntity<ResponseData<PaymentResponse>> retryVnPayPayment(@PathVariable Long orderId) {
+        return ResponseEntity.ok(new ResponseData<>(
+                HttpStatus.OK.value(), "New payment URL created",
+                paymentService.retryVnPayPayment(orderId)
+        ));
+    }
+
     /**
      * VNPay redirects user browser here after payment.
      * BE verifies signature, updates order/payment status, then 302 redirects to FE payment-result page.

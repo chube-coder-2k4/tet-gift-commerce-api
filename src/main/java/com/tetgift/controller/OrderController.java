@@ -59,6 +59,23 @@ public class OrderController {
                 .ok(new ResponseData<>(HttpStatus.OK.value(), "All orders fetched",
                         orderService.getAllOrders(page, size)));
     }
+        @GetMapping("/track/{orderCode}")
+        @Operation(summary = "Track order by Code", description = "Publicly track an order using order code")
+        public ResponseEntity<ResponseData<OrderResponse>> trackOrderByCode(@PathVariable String orderCode) {
+                return ResponseEntity
+                                .ok(new ResponseData<>(HttpStatus.OK.value(), "Order fetched via tracking",
+                                                orderService.getOrderByCode(orderCode)));
+        }
+
+        @GetMapping("/my-orders")
+        @Operation(summary = "Get my orders", description = "Get paginated list of current user's orders")
+        public ResponseEntity<ResponseData<PageResponse<OrderResponse>>> getMyOrders(
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "10") int size) {
+                return ResponseEntity
+                                .ok(new ResponseData<>(HttpStatus.OK.value(), "Orders fetched",
+                                                orderService.getMyOrders(page, size)));
+        }
 
     @GetMapping("/all")
     @Operation(summary = "Get all orders (ADMIN)", description = "Get paginated list of all orders")
