@@ -9,8 +9,10 @@ import com.tetgift.exception.ResourceNotFoundException;
 import com.tetgift.model.entity.InvoiceEntity;
 import com.tetgift.model.entity.OrderEntity;
 import com.tetgift.model.entity.OrderItemEntity;
+import com.tetgift.model.entity.PaymentEntity;
 import com.tetgift.repository.jpa.InvoiceRepository;
 import com.tetgift.repository.jpa.OrderRepository;
+import com.tetgift.repository.jpa.PaymentRepository;
 import com.tetgift.service.InvoiceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +36,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
     private final OrderRepository orderRepository;
+    private final PaymentRepository paymentRepository;
     private final TemplateEngine templateEngine;
     private final Cloudinary cloudinary;
 
@@ -154,8 +157,21 @@ public class InvoiceServiceImpl implements InvoiceService {
         Context ctx = new Context(Locale.forLanguageTag("vi"));
 
         ctx.setVariable("invoiceNumber", invoiceNumber);
+        ctx.setVariable("orderCode", order.getOrderCode() != null ? order.getOrderCode() : "#" + order.getId());
         ctx.setVariable("orderId", order.getId());
         ctx.setVariable("issuedDate", LocalDateTime.now().format(DATE_FMT));
+
+        // Customer Info
+        ctx.setVariable("customerName", order.getUser().getFullName());
+        ctx.setVariable("customerEmail", order.getUser().getEmail());
+
+        // Payment Info
+        String paymentMethodStr = "COD";
+        Optional<PaymentEntity> paymentOpt = paymentRepository.findByOrderId(order.getId());
+        if (paymentOpt.isPresent()) {
+            paymentMethodStr = paymentOpt.get().getMethod().name();
+        }
+        ctx.setVariable("paymentMethod", paymentMethodStr);
 
         // Company/VAT info
         ctx.setVariable("companyName", order.getVatCompanyName());

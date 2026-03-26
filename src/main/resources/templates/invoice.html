@@ -52,28 +52,40 @@
     <table style="width:100%; border:none; margin-bottom:20px;">
         <tr>
             <td style="width:50%; vertical-align:top; border:none; padding:0 15px 0 0;">
-                <div class="section-title">THÔNG TIN DOANH NGHIỆP MUA HÀNG</div>
+                <div class="section-title">THÔNG TIN KHÁCH HÀNG / DOANH NGHIỆP</div>
                 <div class="info-row">
-                    <span class="info-label">Công ty:</span>
-                    <span class="info-value" th:text="${companyName} ?: 'Khách lẻ'"></span>
+                    <span class="info-label">Khách hàng:</span>
+                    <span class="info-value" th:text="${customerName}"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email KH:</span>
+                    <span class="info-value" th:text="${customerEmail}"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Công ty (VAT):</span>
+                    <span class="info-value" th:text="${companyName} ?: '—'"></span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Mã số thuế:</span>
                     <span class="info-value" th:text="${taxCode} ?: '—'"></span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">Điện thoại:</span>
+                    <span class="info-label">SĐT (VAT):</span>
                     <span class="info-value" th:text="${companyPhone} ?: '—'"></span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">Địa chỉ:</span>
+                    <span class="info-label">Địa chỉ (VAT):</span>
                     <span class="info-value" th:text="${companyAddress} ?: '—'"></span>
                 </div>
             </td>
             <td style="width:50%; vertical-align:top; border:none; padding:0 0 0 15px; text-align:right;">
                 <div class="section-title">THÔNG TIN ĐƠN HÀNG</div>
                 <div class="info-row">
-                    <span class="info-label">Mã đơn hàng:</span>
+                    <span class="info-label">Mã theo dõi:</span>
+                    <span class="info-value" th:text="${orderCode}"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">ID trên hệ thống:</span>
                     <span class="info-value" th:text="'#' + ${orderId}"></span>
                 </div>
                 <div class="info-row">
@@ -81,6 +93,10 @@
                     <span class="info-value" th:text="${issuedDate}"></span>
                 </div>
                 <div class="info-row">
+                    <span class="info-label">Hình thức TT:</span>
+                    <span class="info-value" th:text="${paymentMethod}"></span>
+                </div>
+                <div class="info-row" style="margin-top: 8px;">
                     <span class="info-label">Người nhận:</span>
                     <span class="info-value" th:text="${receiverName}"></span>
                 </div>
