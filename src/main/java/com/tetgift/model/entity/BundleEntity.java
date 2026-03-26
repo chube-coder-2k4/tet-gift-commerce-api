@@ -46,5 +46,6 @@ public class BundleEntity extends BaseEntity<Long> {
     private Integer stock = 0;
 
     @Version
-    private Long version;
+    @Builder.Default
+    private Long version = 0L;
 }

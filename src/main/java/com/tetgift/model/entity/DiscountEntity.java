@@ -43,5 +43,6 @@ public class DiscountEntity extends BaseEntity<Long> {
     private boolean isActive = true;
 
     @Version
-    private Long version;
+    @Builder.Default
+    private Long version = 0L;
 }
