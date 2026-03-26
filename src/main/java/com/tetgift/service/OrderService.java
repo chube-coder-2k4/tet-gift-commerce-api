@@ -9,6 +9,8 @@ public interface OrderService {
 
     OrderResponse getOrderById(Long id);
 
+    OrderResponse getOrderByCode(String orderCode);
+
     PageResponse<OrderResponse> getMyOrders(int page, int size);
 
     PageResponse<OrderResponse> getAllOrders(int page, int size);

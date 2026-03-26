@@ -38,6 +38,14 @@ public class OrderController {
                                                 orderService.getOrderById(id)));
         }
 
+        @GetMapping("/track/{orderCode}")
+        @Operation(summary = "Track order by Code", description = "Publicly track an order using order code")
+        public ResponseEntity<ResponseData<OrderResponse>> trackOrderByCode(@PathVariable String orderCode) {
+                return ResponseEntity
+                                .ok(new ResponseData<>(HttpStatus.OK.value(), "Order fetched via tracking",
+                                                orderService.getOrderByCode(orderCode)));
+        }
+
         @GetMapping("/my-orders")
         @Operation(summary = "Get my orders", description = "Get paginated list of current user's orders")
         public ResponseEntity<ResponseData<PageResponse<OrderResponse>>> getMyOrders(
