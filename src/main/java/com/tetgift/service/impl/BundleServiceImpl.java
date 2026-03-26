@@ -4,6 +4,7 @@ import com.tetgift.dto.request.BundleRequest;
 import com.tetgift.dto.response.BundleProductResponse;
 import com.tetgift.dto.response.BundleResponse;
 import com.tetgift.dto.response.PageResponse;
+import com.tetgift.dto.response.ProductImageResponse;
 import com.tetgift.exception.ProductNotFoundException;
 import com.tetgift.exception.ResourceNotFoundException;
 import com.tetgift.model.entity.BundleEntity;
@@ -25,7 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -178,14 +179,30 @@ public class BundleServiceImpl implements BundleService {
 
     private BundleResponse toResponse(BundleEntity bundle) {
         List<BundleProductResponse> products = bundle.getBundleProducts().stream()
-                .map(bp -> BundleProductResponse.builder()
-                        .id(bp.getId())
-                        .productId(bp.getProduct().getId())
-                        .productName(bp.getProduct().getName())
-                        .productPrice(bp.getProduct().getPrice())
-                        .quantity(bp.getQuantity())
-                        .build())
-                .toList();
+                .map(bp -> {
+                    ProductEntity product = bp.getProduct();
+                    List<ProductImageResponse> images = Collections.emptyList();
+                    if (product != null && product.getProductImages() != null) {
+                        images = product.getProductImages().stream()
+                                .map(img -> ProductImageResponse.builder()
+                                        .id(img.getId())
+                                        .imageUrl(img.getImageUrl())
+                                        .imageType(img.getImageType())
+                                        .publicId(img.getPublicId())
+                                        .isPrimary(img.isPrimary())
+                                        .build())
+                                .toList();
+                    }
+
+                    return BundleProductResponse.builder()
+                            .id(bp.getId())
+                            .productId(product != null ? product.getId() : null)
+                            .productName(product != null ? product.getName() : null)
+                            .productPrice(product != null ? product.getPrice() : null)
+                            .quantity(bp.getQuantity())
+                            .images(images)
+                            .build();
+                }).toList();
 
         return BundleResponse.builder()
                 .id(bundle.getId())
