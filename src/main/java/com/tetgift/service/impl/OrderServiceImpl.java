@@ -334,6 +334,8 @@ public class OrderServiceImpl implements OrderService {
         // Cập nhật lại cột stock tổng ở Product để đồng bộ (optional)
         product.setStock(product.getStock() - neededQuantity);
         productRepository.save(product);
+    }
+
     @Transactional
     public OrderResponse cancelOrderWithRefund(Long orderId, RefundRequest request) {
         Users user = authenticationUtils.getCurrentUser();
