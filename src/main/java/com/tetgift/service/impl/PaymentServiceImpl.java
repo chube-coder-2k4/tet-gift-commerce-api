@@ -16,6 +16,8 @@ import com.tetgift.repository.jpa.OrderRepository;
 import com.tetgift.repository.jpa.PaymentRepository;
 import com.tetgift.service.PaymentService;
 import com.tetgift.util.VNPayUtil;
+import com.tetgift.util.AuthenticationUtils;
+import com.tetgift.model.Users;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
     private final VNPayConfig vnPayConfig;
+    private final AuthenticationUtils authenticationUtils;
 
     private static final long MIN_PAYMENT_AMOUNT = 5000; // 5,000 VNĐ
 
@@ -42,8 +45,8 @@ public class PaymentServiceImpl implements PaymentService {
         OrderEntity order = orderRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + request.getOrderId()));
 
-        if (order.getStatus() != OrderStatus.CREATED) {
-            throw new InvalidDataException("Order is not in CREATED status");
+        if (order.getStatus() != OrderStatus.CREATED && order.getStatus() != OrderStatus.WAITING_PAYMENT) {
+            throw new InvalidDataException("Order is not in a payable status. Current status: " + order.getStatus());
         }
 
         PaymentMethod method = PaymentMethod.valueOf(request.getMethod().toUpperCase());
@@ -103,6 +106,48 @@ public class PaymentServiceImpl implements PaymentService {
             // COD: clear cart immediately since no online payment needed
             clearCartForUser(order.getUser().getId());
         }
+
+        return toResponse(saved, paymentUrl);
+    }
+
+    @Override
+    @Transactional
+    public PaymentResponse retryVnPayPayment(Long orderId) {
+        Users currentUser = authenticationUtils.getCurrentUser();
+        OrderEntity order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
+
+        if (currentUser != null && !order.getUser().getId().equals(currentUser.getId())) {
+            throw new InvalidDataException("You do not have permission to retry payment for this order");
+        }
+
+        if (order.getStatus() != OrderStatus.WAITING_PAYMENT) {
+            throw new InvalidDataException("Cannot retry payment for order in status: " + order.getStatus());
+        }
+
+        long totalAmountLong = order.getTotalAmount().longValue();
+        if (totalAmountLong < MIN_PAYMENT_AMOUNT) {
+            throw new InvalidDataException("Tổng đơn hàng phải ít nhất " + MIN_PAYMENT_AMOUNT + " VNĐ.");
+        }
+
+        // Mark previous pending payments as failed/cancelled
+        paymentRepository.findByOrderId(orderId).ifPresent(oldPayment -> {
+            if (oldPayment.getStatus() == PaymentStatus.PENDING) {
+                oldPayment.setStatus(PaymentStatus.FAILED);
+                paymentRepository.save(oldPayment);
+            }
+        });
+
+        // Create new payment entity to get a new unique ID for VNPay vnp_TxnRef
+        PaymentEntity newPayment = PaymentEntity.builder()
+                .order(order)
+                .method(PaymentMethod.VN_PAY)
+                .status(PaymentStatus.PENDING)
+                .amount(order.getTotalAmount())
+                .build();
+
+        PaymentEntity saved = paymentRepository.save(newPayment);
+        String paymentUrl = VNPayUtil.buildPaymentUrl(saved.getId(), saved.getAmount().doubleValue(), vnPayConfig);
 
         return toResponse(saved, paymentUrl);
     }

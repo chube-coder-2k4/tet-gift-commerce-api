@@ -183,13 +183,16 @@ public class CartServiceImpl implements CartService {
         String name;
         BigDecimal price;
         Long itemId;
+        String image = null;
 
         if ("PRODUCT".equals(item.getItemType()) && item.getProduct() != null) {
             name = item.getProduct().getName();
             price = item.getProduct().getPrice();
             itemId = item.getProduct().getId();
+            image = item.getProduct().getImage();
         } else if ("BUNDLE".equals(item.getItemType()) && item.getBundle() != null) {
             itemId = item.getBundle().getId();
+            image = item.getBundle().getImage();
             if (Boolean.TRUE.equals(item.getIsCustomCombo()) && item.getCustomComboData() != null) {
                 try {
                     JsonNode comboNode = objectMapper.readTree(item.getCustomComboData());
@@ -214,6 +217,7 @@ public class CartServiceImpl implements CartService {
                 .itemType(item.getItemType())
                 .itemId(itemId)
                 .itemName(name)
+                .itemImage(image)
                 .itemPrice(price)
                 .quantity(item.getQuantity())
                 .subtotal(price.multiply(BigDecimal.valueOf(item.getQuantity())))

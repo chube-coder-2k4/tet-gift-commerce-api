@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,6 +19,9 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class OrderEntity extends BaseEntity<Long> {
+
+    @Column(name = "order_code", unique = true, length = 50)
+    private String orderCode;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -63,6 +67,19 @@ public class OrderEntity extends BaseEntity<Long> {
     @Builder.Default
     private BigDecimal discountAmount = BigDecimal.ZERO;
 
+    // Refund bank info
+    @Column(name = "refund_bank_name", length = 100)
+    private String refundBankName;
+
+    @Column(name = "refund_bank_account", length = 50)
+    private String refundBankAccount;
+
+    @Column(name = "refund_account_holder", length = 100)
+    private String refundAccountHolder;
+
+    @Column(name = "refund_confirmed_at")
+    private LocalDateTime refundConfirmedAt;
+
     @Column(name = "tier_discount_percent")
     @Builder.Default
     private Integer tierDiscountPercent = 0;
@@ -74,4 +91,12 @@ public class OrderEntity extends BaseEntity<Long> {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrderItemEntity> orderItems = new ArrayList<>();
+
+    @PrePersist
+    public void generateOrderCode() {
+        if (this.orderCode == null) {
+            int randomNum = 1000 + (int) (Math.random() * 9000);
+            this.orderCode = "SBA-" + System.currentTimeMillis() + "-" + randomNum;
+        }
+    }
 }

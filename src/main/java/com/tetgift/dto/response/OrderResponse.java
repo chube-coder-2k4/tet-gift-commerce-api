@@ -11,6 +11,7 @@ import java.util.List;
 @Builder
 public class OrderResponse {
     private Long id;
+    private String orderCode;
     private String status;
     private BigDecimal totalAmount;
 
@@ -39,6 +40,12 @@ public class OrderResponse {
     private String vatTaxCode;
     private String vatPhone;
     private String vatAddress;
+
+    // Refund info
+    private String refundBankName;
+    private String refundBankAccount;
+    private String refundAccountHolder;
+    private LocalDateTime refundConfirmedAt;
 
     private List<OrderItemResponse> items;
     private LocalDateTime createdAt;
