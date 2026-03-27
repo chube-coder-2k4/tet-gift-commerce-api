@@ -26,11 +26,11 @@ public interface OrderService {
     void deductStockFromBatches(ProductEntity product, int neededQuantity);
     OrderResponse cancelOrderWithRefund(Long orderId, RefundRequest request);
 
-    PageResponse<OrderResponse> getRefundOrders(String filterStatus, int page, int size);
+    PageResponse<OrderResponse> getRefundOrders(String keyword, String status, int page, int size);
 
     OrderResponse confirmRefund(Long orderId);
 
-    byte[] exportRefundOrders(String filterStatus, LocalDateTime startDate, LocalDateTime endDate, String format);
+    byte[] exportRefundOrders(LocalDateTime startDate, LocalDateTime endDate, String status, String format);
 
 }
 

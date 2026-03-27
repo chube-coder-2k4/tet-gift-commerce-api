@@ -34,6 +34,7 @@ public class BundleEntity extends BaseEntity<Long> {
     @Builder.Default
     private List<BundleProductEntity> bundleProducts = new ArrayList<>();
 
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "image")
