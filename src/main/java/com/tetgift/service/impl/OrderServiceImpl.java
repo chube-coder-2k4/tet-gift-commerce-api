@@ -488,7 +488,7 @@ public class OrderServiceImpl implements OrderService {
             headerStyle.setFont(headerFont);
 
             String[] headers = {
-                    "Order ID", "Status", "Customer Name", "Customer Email",
+                    "Order ID", "Customer Name", "Customer Email",
                     "Customer Phone", "Total Amount", "Order Date",
                     "Bank Name", "Bank Account", "Account Holder", "Status"
             };
