@@ -55,4 +55,9 @@ public class ProductEntity extends BaseEntity<Long> {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ProductImageEntity> productImages = new ArrayList<>();
+
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<InventoryBatchEntity> batches = new ArrayList<>();
 }

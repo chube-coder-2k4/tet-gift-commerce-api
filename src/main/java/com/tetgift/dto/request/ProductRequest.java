@@ -9,6 +9,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -39,5 +40,17 @@ public class ProductRequest {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate expDate;
 
+    @NotNull
+    private Integer importQuantity; // Số lượng nhập vào ban đầu
+
+    @NotBlank(message = "batchCode is required")
+    private String batchCode;      // Mã lô (VD: LÔ-001)
+
+    @NotNull(message = "Import Price is required")
+    @Positive(message = "Import Price must be positive")
+    @Min(value = 1000, message = "Import Price must be at least 1,000 VND")
+    private BigDecimal importPrice; // Giá nhập hàng
+
     private List<ProductImageRequest> images;
+
 }

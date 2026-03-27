@@ -3,6 +3,7 @@ package com.tetgift.service;
 import com.tetgift.dto.request.OrderRequest;
 import com.tetgift.dto.response.OrderResponse;
 import com.tetgift.dto.response.PageResponse;
+import com.tetgift.model.entity.ProductEntity;
 
 public interface OrderService {
     OrderResponse createOrder(OrderRequest request);
@@ -16,4 +17,6 @@ public interface OrderService {
     OrderResponse updateOrderStatus(Long id, String status);
 
     OrderResponse cancelOrder(Long id);
+
+    void deductStockFromBatches(ProductEntity product, int neededQuantity);
 }

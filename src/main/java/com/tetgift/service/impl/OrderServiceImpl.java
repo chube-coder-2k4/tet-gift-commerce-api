@@ -11,10 +11,7 @@ import com.tetgift.exception.ResourceNotFoundException;
 import com.tetgift.model.Users;
 import com.tetgift.model.Address;
 import com.tetgift.model.entity.*;
-import com.tetgift.repository.jpa.AddressRepository;
-import com.tetgift.repository.jpa.CartRepository;
-import com.tetgift.repository.jpa.DiscountRepository;
-import com.tetgift.repository.jpa.OrderRepository;
+import com.tetgift.repository.jpa.*;
 import com.tetgift.service.OrderService;
 import com.tetgift.util.AuthenticationUtils;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +45,8 @@ public class OrderServiceImpl implements OrderService {
     private final AuthenticationUtils authenticationUtils;
     private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
+    private final InventoryBatchRepository batchRepository;
+    private final ProductRepository productRepository;
 
     @Override
     @Transactional
@@ -86,20 +86,18 @@ public class OrderServiceImpl implements OrderService {
             BigDecimal price;
             if ("PRODUCT".equals(cartItem.getItemType()) && cartItem.getProduct() != null) {
                 ProductEntity product = cartItem.getProduct();
-                if (product.getStock() < cartItem.getQuantity()) {
-                    throw new InvalidDataException("Sản phẩm " + product.getName() + " không đủ số lượng trong kho");
-                }
-                product.setStock(product.getStock() - cartItem.getQuantity());
+                // THAY THẾ ĐOẠN NÀY:
+                // Gọi hàm trừ kho theo lô thay vì trừ trực tiếp vào product.stock
+                deductStockFromBatches(product, cartItem.getQuantity());
                 price = product.getPrice();
             } else if ("BUNDLE".equals(cartItem.getItemType()) && cartItem.getBundle() != null) {
                 BundleEntity bundle = cartItem.getBundle();
                 for (BundleProductEntity bundleProduct : bundle.getBundleProducts()) {
                     ProductEntity componentProduct = bundleProduct.getProduct();
                     int totalNeeded = cartItem.getQuantity() * bundleProduct.getQuantity();
-                    if (componentProduct.getStock() < totalNeeded) {
-                        throw new InvalidDataException("Sản phẩm " + componentProduct.getName() + " (trong " + bundle.getName() + ") không đủ số lượng trong kho");
-                    }
-                    componentProduct.setStock(componentProduct.getStock() - totalNeeded);
+                    // THAY THẾ ĐOẠN NÀY:
+                    // Trừ kho theo lô cho từng sản phẩm thành phần trong Bundle
+                    deductStockFromBatches(componentProduct, totalNeeded);
                 }
                 if (Boolean.TRUE.equals(cartItem.getIsCustomCombo()) && cartItem.getCustomComboData() != null) {
                     try {
@@ -289,6 +287,38 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(OrderStatus.CANCELLED);
         OrderEntity updated = orderRepository.save(order);
         return toResponse(updated);
+    }
+
+    @Override
+    public void deductStockFromBatches(ProductEntity product, int neededQuantity) {
+        // Tìm các lô hàng còn hạn, sắp xếp theo ngày hết hạn sớm nhất
+        List<InventoryBatchEntity> activeBatches = batchRepository
+                .findByProductIdAndCurrentQuantityGreaterThanAndExpiryDateGreaterThanEqualOrderByExpiryDateAsc(
+                        product.getId(), 0, LocalDate.now());
+
+        int remainingToDeduct = neededQuantity;
+
+        for (InventoryBatchEntity batch : activeBatches) {
+            if (remainingToDeduct <= 0) break;
+
+            int availableInBatch = batch.getCurrentQuantity();
+            if (availableInBatch >= remainingToDeduct) {
+                batch.setCurrentQuantity(availableInBatch - remainingToDeduct);
+                remainingToDeduct = 0;
+            } else {
+                remainingToDeduct -= availableInBatch;
+                batch.setCurrentQuantity(0);
+            }
+            batchRepository.save(batch);
+        }
+
+        if (remainingToDeduct > 0) {
+            throw new InvalidDataException("Sản phẩm " + product.getName() + " không đủ hàng trong các lô khả dụng.");
+        }
+
+        // Cập nhật lại cột stock tổng ở Product để đồng bộ (optional)
+        product.setStock(product.getStock() - neededQuantity);
+        productRepository.save(product);
     }
 
     private OrderResponse toResponse(OrderEntity order) {

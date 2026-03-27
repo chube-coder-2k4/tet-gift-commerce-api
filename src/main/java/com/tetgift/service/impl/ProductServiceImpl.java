@@ -8,9 +8,11 @@ import com.tetgift.exception.InvalidDataException;
 import com.tetgift.exception.ProductNotFoundException;
 import com.tetgift.mapper.ProductMapper;
 import com.tetgift.model.Category;
+import com.tetgift.model.entity.InventoryBatchEntity;
 import com.tetgift.model.entity.ProductEntity;
 import com.tetgift.model.entity.ProductImageEntity;
 import com.tetgift.repository.jpa.CategoryRepository;
+import com.tetgift.repository.jpa.InventoryBatchRepository;
 import com.tetgift.repository.jpa.ProductRepository;
 import com.tetgift.service.CloudinaryService;
 import com.tetgift.service.ProductService;
@@ -25,9 +27,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +42,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductMapper productMapper;
     private final CategoryRepository categoryRepository;
     private final CloudinaryService cloudinaryService;
+    private final InventoryBatchRepository batchRepository;
 
     @Override
     public ProductResponse findProductById(Long id) {
@@ -60,16 +65,28 @@ public class ProductServiceImpl implements ProductService {
 
     private Long saveProductInternal(ProductRequest request, MultipartFile[] images) {
         try {
-            ProductEntity product = ProductEntity.builder()
-                    .name(request.getName())
-                    .description(request.getDescription())
-                    .price(request.getPrice())
-                    .stock(request.getStock() != null ? request.getStock() : 0)
-                    .isActive(true)
-                    .manufactureDate(request.getManufactureDate())
-                    .expDate(request.getExpDate())
-                    .build();
+            Optional<ProductEntity> existingProduct = productRepository.findByName(request.getName());
 
+            ProductEntity product;
+            if (existingProduct.isPresent()) {
+                product = existingProduct.get();
+                // Cập nhật tổng tồn kho của Product
+                int newStock = (request.getStock() != null ? request.getStock() : 0);
+                product.setStock(product.getStock() + newStock);
+                // Có thể update thêm giá bán nếu cần
+                product.setPrice(request.getPrice());
+            }
+                else {
+                 product = ProductEntity.builder()
+                        .name(request.getName())
+                        .description(request.getDescription())
+                        .price(request.getPrice())
+                        .stock(request.getStock() != null ? request.getStock() : 0)
+                        .isActive(true)
+                        .manufactureDate(request.getManufactureDate())
+                        .expDate(request.getExpDate())
+                        .build();
+            }
             // Set category
             if (request.getCategoryId() != null) {
                 Category category = categoryRepository.findByIdAndIsActiveTrue(request.getCategoryId())
@@ -104,6 +121,27 @@ public class ProductServiceImpl implements ProductService {
             syncPrimaryImageField(product);
 
             ProductEntity saved = productRepository.save(product);
+
+            if (saved.getStock() > 0) {
+                int quantityToEntry = (request.getImportQuantity() != null && request.getImportQuantity() > 0)
+                        ? request.getImportQuantity()
+                        : request.getStock();
+                InventoryBatchEntity initialBatch = InventoryBatchEntity.builder()
+                        .product(saved)
+                        .batchCode(request.getBatchCode() != null ? request.getBatchCode() : "BATCH-INIT-" + saved.getId())
+//                        .importQuantity(request.getImportQuantity())
+//                        .currentQuantity(request.getImportQuantity())
+                        .importQuantity(quantityToEntry)
+                        .currentQuantity(quantityToEntry)
+                        // Lấy importPrice từ request
+                        .importPrice(request.getImportPrice() != null ? request.getImportPrice() : request.getPrice().multiply(new BigDecimal("0.7")))
+
+                        .manufactureDate(request.getManufactureDate())
+                        .expiryDate(request.getExpDate())
+                        .build();
+                batchRepository.save(initialBatch);
+                log.info("Initial batch created for product: {}", saved.getId());
+            }
             log.info("Product created with {} images, id={}", saved.getProductImages().size(), saved.getId());
             return saved.getId();
         } catch (IOException e) {
