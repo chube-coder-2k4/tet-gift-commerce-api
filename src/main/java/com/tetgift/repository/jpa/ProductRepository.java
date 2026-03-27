@@ -16,6 +16,8 @@ import java.util.Optional;
 public interface ProductRepository extends JpaRepository<ProductEntity, Long> {
     Page<ProductEntity> findByIsActiveTrue(Pageable pageable);
 
+    Optional<ProductEntity> findByName(String name);
+
     Optional<ProductEntity> findByIdAndIsActiveTrue(Long id);
 
     Page<ProductEntity> findByCategoryIdAndIsActiveTrue(Long categoryId, Pageable pageable);
@@ -63,4 +65,20 @@ public interface ProductRepository extends JpaRepository<ProductEntity, Long> {
      */
     @Query("SELECT p FROM ProductEntity p WHERE p.isActive = true AND p.stock > 0 ORDER BY p.createdAt DESC")
     List<ProductEntity> findTopActiveProducts(Pageable pageable);
+
+
+    /**
+     * Tính tổng tồn kho khả dụng từ các lô hàng (chưa hết hạn và còn hàng)
+     */
+    @Query("SELECT COALESCE(SUM(b.currentQuantity), 0) FROM InventoryBatchEntity b " +
+            "WHERE b.product.id = :productId AND b.isActive = true AND b.expiryDate >= CURRENT_DATE")
+    Integer getTotalEffectiveStock(@Param("productId") Long productId);
+
+    /**
+     * Tìm các sản phẩm có tổng tồn kho từ các lô hàng >= minStock
+     */
+    @Query("SELECT p FROM ProductEntity p WHERE p.isActive = true AND " +
+            "(SELECT COALESCE(SUM(b.currentQuantity), 0) FROM InventoryBatchEntity b " +
+            "WHERE b.product = p AND b.isActive = true AND b.expiryDate >= CURRENT_DATE) >= :minStock")
+    List<ProductEntity> findByBatchStockGreaterThanEqual(@Param("minStock") Integer minStock);
 }

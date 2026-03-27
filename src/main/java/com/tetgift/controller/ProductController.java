@@ -1,9 +1,11 @@
 package com.tetgift.controller;
 
 import com.tetgift.dto.request.ProductRequest;
+import com.tetgift.dto.response.InventoryBatchResponse;
 import com.tetgift.dto.response.PageResponse;
 import com.tetgift.dto.response.ProductResponse;
 import com.tetgift.dto.response.ResponseData;
+import com.tetgift.service.InventoryService;
 import com.tetgift.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -15,15 +17,19 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/products")
 @RequiredArgsConstructor
 public class ProductController {
 
     private final ProductService productService;
+    private final InventoryService inventoryService;
 
     @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasAuthority('ROLE_ROLE_ADMIN')")
     @Operation(summary = "Register Product (multipart)", description = "Register a new product with multiple image upload. First image is PRIMARY, rest are COVER.")
     public ResponseEntity<ResponseData<Long>> registerProduct(
         @RequestPart("request") @Valid ProductRequest productRequest,
@@ -50,6 +56,7 @@ public class ProductController {
 
     @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasAuthority('ROLE_ROLE_ADMIN')")
     @Operation(summary = "Register Product (JSON)", description = "Register a new product without file upload (image URLs in JSON body)")
     public ResponseEntity<ResponseData<Long>> registerProductJson(
         @RequestBody @Valid ProductRequest productRequest
@@ -148,5 +155,23 @@ public class ProductController {
                         "Product deleted successfully",
                         "Product with ID " + id + " has been deleted"
                 ));
+    }
+
+
+    @GetMapping("/batches")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<PageResponse<InventoryBatchResponse>> getAllBatches(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+//            @RequestParam(required = false) String keyword
+    ) {
+        return ResponseEntity.ok(inventoryService.getAllBatches(page, size));
+    }
+
+    @GetMapping("/{productId}/batches")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<PageResponse<InventoryBatchResponse>> getBatchesByProduct(@PathVariable Long productId) {
+        // Gọi service xử lý tương ứng
+        return ResponseEntity.ok(inventoryService.getBatchesByProduct(productId, 0, 100)); // Giả sử lấy tất cả batches của sản phẩm, có thể thêm phân trang nếu cần
     }
 }
