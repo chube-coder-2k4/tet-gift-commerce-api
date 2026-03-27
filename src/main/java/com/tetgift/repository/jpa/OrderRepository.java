@@ -18,7 +18,11 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
 
     Page<OrderEntity> findByStatus(OrderStatus status, Pageable pageable);
 
+    Page<OrderEntity> findByStatusIn(List<OrderStatus> statuses, Pageable pageable);
+
     List<OrderEntity> findByStatusAndCreatedAtBetween(OrderStatus status, LocalDateTime start, LocalDateTime end);
+    List<OrderEntity> findByStatusInAndCreatedAtBetween(List<OrderStatus> statuses, LocalDateTime start, LocalDateTime end);
+    
     Optional<OrderEntity> findByOrderCode(String orderCode);
 
     @Query(value = "SELECT new com.tetgift.dto.response.TopCustomerResponse(u.id, u.fullName, u.email, COUNT(o), SUM(o.totalAmount)) " +

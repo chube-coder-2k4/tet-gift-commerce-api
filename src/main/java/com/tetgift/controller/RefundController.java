@@ -41,13 +41,14 @@ public class RefundController {
     private final OrderRepository orderRepository;
 
     @GetMapping
-    @Operation(summary = "Get refund requests", description = "Get paginated list of orders pending refund")
+    @Operation(summary = "Get refund requests", description = "Get paginated list of orders pending and completed refund")
     public ResponseEntity<ResponseData<PageResponse<OrderResponse>>> getRefundOrders(
+            @RequestParam(required = false, defaultValue = "ALL") String filterStatus,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         return ResponseEntity
                 .ok(new ResponseData<>(HttpStatus.OK.value(), "Refund orders fetched",
-                        orderService.getRefundOrders(page, size)));
+                        orderService.getRefundOrders(filterStatus, page, size)));
     }
 
     @PutMapping("/{id}/confirm")
@@ -62,6 +63,7 @@ public class RefundController {
     @Operation(summary = "Export refund list",
             description = "Export refund orders to Excel or CSV. Format: xlsx or csv")
     public ResponseEntity<byte[]> exportRefunds(
+            @RequestParam(required = false, defaultValue = "ALL") String filterStatus,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(defaultValue = "xlsx") String format) {
@@ -69,7 +71,7 @@ public class RefundController {
         LocalDateTime startDateTime = startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
 
-        byte[] fileContent = orderService.exportRefundOrders(startDateTime, endDateTime, format);
+        byte[] fileContent = orderService.exportRefundOrders(filterStatus, startDateTime, endDateTime, format);
 
         HttpHeaders headers = new HttpHeaders();
         if ("csv".equalsIgnoreCase(format)) {

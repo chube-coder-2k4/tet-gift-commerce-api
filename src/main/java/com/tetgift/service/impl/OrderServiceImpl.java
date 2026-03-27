@@ -376,9 +376,18 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public PageResponse<OrderResponse> getRefundOrders(int page, int size) {
+    public PageResponse<OrderResponse> getRefundOrders(String filterStatus, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<OrderEntity> orderPage = orderRepository.findByStatus(OrderStatus.CANCELLED_PENDING_REFUND, pageable);
+        Page<OrderEntity> orderPage;
+        
+        if ("PENDING".equalsIgnoreCase(filterStatus)) {
+            orderPage = orderRepository.findByStatus(OrderStatus.CANCELLED_PENDING_REFUND, pageable);
+        } else if ("REFUNDED".equalsIgnoreCase(filterStatus)) {
+            orderPage = orderRepository.findByStatus(OrderStatus.CANCELLED_REFUNDED, pageable);
+        } else {
+            orderPage = orderRepository.findByStatusIn(
+                List.of(OrderStatus.CANCELLED_PENDING_REFUND, OrderStatus.CANCELLED_REFUNDED), pageable);
+        }
 
         List<OrderResponse> responses = orderPage.getContent().stream()
                 .map(this::toResponse)
@@ -423,9 +432,16 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public byte[] exportRefundOrders(LocalDateTime startDateTime, LocalDateTime endDateTime, String format) {
-        List<OrderEntity> orders = orderRepository.findByStatusAndCreatedAtBetween(
-                OrderStatus.CANCELLED_PENDING_REFUND, startDateTime, endDateTime);
+    public byte[] exportRefundOrders(String filterStatus, LocalDateTime startDateTime, LocalDateTime endDateTime, String format) {
+        List<OrderEntity> orders;
+        if ("PENDING".equalsIgnoreCase(filterStatus)) {
+            orders = orderRepository.findByStatusAndCreatedAtBetween(OrderStatus.CANCELLED_PENDING_REFUND, startDateTime, endDateTime);
+        } else if ("REFUNDED".equalsIgnoreCase(filterStatus)) {
+            orders = orderRepository.findByStatusAndCreatedAtBetween(OrderStatus.CANCELLED_REFUNDED, startDateTime, endDateTime);
+        } else {
+            orders = orderRepository.findByStatusInAndCreatedAtBetween(
+                List.of(OrderStatus.CANCELLED_PENDING_REFUND, OrderStatus.CANCELLED_REFUNDED), startDateTime, endDateTime);
+        }
 
         if ("csv".equalsIgnoreCase(format)) {
             return generateCsv(orders);
@@ -445,7 +461,7 @@ public class OrderServiceImpl implements OrderService {
             headerStyle.setFont(headerFont);
 
             String[] headers = {
-                    "Order ID", "Customer Name", "Customer Email",
+                    "Order ID", "Status", "Customer Name", "Customer Email",
                     "Customer Phone", "Total Amount", "Order Date",
                     "Bank Name", "Bank Account", "Account Holder"
             };
@@ -463,14 +479,15 @@ public class OrderServiceImpl implements OrderService {
             for (OrderEntity order : orders) {
                 Row row = sheet.createRow(rowNum++);
                 row.createCell(0).setCellValue(order.getId());
-                row.createCell(1).setCellValue(order.getUser().getFullName() != null ? order.getUser().getFullName() : "");
-                row.createCell(2).setCellValue(order.getUser().getEmail() != null ? order.getUser().getEmail() : "");
-                row.createCell(3).setCellValue(order.getUser().getPhone() != null ? order.getUser().getPhone() : "");
-                row.createCell(4).setCellValue(order.getTotalAmount().doubleValue());
-                row.createCell(5).setCellValue(order.getCreatedAt().format(formatter));
-                row.createCell(6).setCellValue(order.getRefundBankName() != null ? order.getRefundBankName() : "");
-                row.createCell(7).setCellValue(order.getRefundBankAccount() != null ? order.getRefundBankAccount() : "");
-                row.createCell(8).setCellValue(order.getRefundAccountHolder() != null ? order.getRefundAccountHolder() : "");
+                row.createCell(1).setCellValue(order.getStatus().name());
+                row.createCell(2).setCellValue(order.getUser().getFullName() != null ? order.getUser().getFullName() : "");
+                row.createCell(3).setCellValue(order.getUser().getEmail() != null ? order.getUser().getEmail() : "");
+                row.createCell(4).setCellValue(order.getUser().getPhone() != null ? order.getUser().getPhone() : "");
+                row.createCell(5).setCellValue(order.getTotalAmount().doubleValue());
+                row.createCell(6).setCellValue(order.getCreatedAt().format(formatter));
+                row.createCell(7).setCellValue(order.getRefundBankName() != null ? order.getRefundBankName() : "");
+                row.createCell(8).setCellValue(order.getRefundBankAccount() != null ? order.getRefundBankAccount() : "");
+                row.createCell(9).setCellValue(order.getRefundAccountHolder() != null ? order.getRefundAccountHolder() : "");
             }
 
             for (int i = 0; i < headers.length; i++) {
@@ -494,11 +511,12 @@ public class OrderServiceImpl implements OrderService {
             out.write(0xBF);
 
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-            writer.println("Order ID,Customer Name,Customer Email,Total Amount,Order Date,Bank Name,Bank Account,Account Holder");
+            writer.println("Order ID,Status,Customer Name,Customer Email,Total Amount,Order Date,Bank Name,Bank Account,Account Holder");
 
             for (OrderEntity order : orders) {
-                writer.printf("%d,\"%s\",\"%s\",%s,\"%s\",\"%s\",\"%s\",\"%s\"%n",
+                writer.printf("%d,\"%s\",\"%s\",\"%s\",%s,\"%s\",\"%s\",\"%s\",\"%s\"%n",
                         order.getId(),
+                        order.getStatus().name(),
                         escapeCsv(order.getUser().getFullName()),
                         escapeCsv(order.getUser().getEmail()),
                         order.getTotalAmount().toPlainString(),
