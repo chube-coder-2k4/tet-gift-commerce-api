@@ -22,7 +22,6 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
     Page<OrderEntity> findByStatusIn(List<OrderStatus> statuses, Pageable pageable);
 
     List<OrderEntity> findByStatusAndCreatedAtBetween(OrderStatus status, LocalDateTime start, LocalDateTime end);
-    List<OrderEntity> findByStatusInAndCreatedAtBetween(List<OrderStatus> statuses, LocalDateTime start, LocalDateTime end);
     
     Optional<OrderEntity> findByOrderCode(String orderCode);
 
