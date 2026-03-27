@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
+
 
 @RestController
 @RequiredArgsConstructor
@@ -38,16 +38,6 @@ public class OrderController {
         return ResponseEntity
                 .ok(new ResponseData<>(HttpStatus.OK.value(), "Order fetched",
                         orderService.getOrderById(id)));
-    }
-
-    @GetMapping("/my-orders")
-    @Operation(summary = "Get my orders", description = "Get paginated list of current user's orders")
-    public ResponseEntity<ResponseData<PageResponse<OrderResponse>>> getMyOrders(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity
-                .ok(new ResponseData<>(HttpStatus.OK.value(), "Orders fetched",
-                        orderService.getMyOrders(page, size)));
     }
 
     @GetMapping
