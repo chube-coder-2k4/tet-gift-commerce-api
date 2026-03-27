@@ -375,11 +375,44 @@ public class OrderServiceImpl implements OrderService {
         return toResponse(updated);
     }
 
-    @Override
-    public PageResponse<OrderResponse> getRefundOrders(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<OrderEntity> orderPage = orderRepository.findByStatus(OrderStatus.CANCELLED_PENDING_REFUND, pageable);
 
+    //    public PageResponse<OrderResponse> getRefundOrders(int page, int size) {
+//        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+//        Page<OrderEntity> orderPage = orderRepository.findByStatus(OrderStatus.CANCELLED_PENDING_REFUND, pageable);
+//
+//        List<OrderResponse> responses = orderPage.getContent().stream()
+//                .map(this::toResponse)
+//                .toList();
+//
+//        return PageResponse.<OrderResponse>builder()
+//                .data(responses)
+//                .pageNo(orderPage.getNumber())
+//                .pageSize(orderPage.getSize())
+//                .totalItems(orderPage.getTotalElements())
+//                .totalPages(orderPage.getTotalPages())
+//                .build();
+//    }
+    @Override
+    public PageResponse<OrderResponse> getRefundOrders(String keyword, String status, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        // 1. Xử lý điều kiện Filter trạng thái
+        List<OrderStatus> targetStatuses;
+        if (status != null && !status.trim().isEmpty()) {
+            // Lọc theo đúng trạng thái truyền vào (Ví dụ: truyền vào "CANCELLED_PENDING_REFUND")
+            targetStatuses = List.of(OrderStatus.valueOf(status.toUpperCase()));
+        } else {
+            // Nếu không truyền filter -> Lấy CẢ HAI: Đang chờ hoàn và Đã hoàn tiền
+            targetStatuses = List.of(
+                    OrderStatus.CANCELLED_PENDING_REFUND,
+                    OrderStatus.CANCELLED_REFUNDED
+            );
+        }
+
+        // 2. Gọi Repository đã viết ở Bước 1
+        Page<OrderEntity> orderPage = orderRepository.findRefundOrders(targetStatuses, keyword, pageable);
+
+        // 3. Map sang Response
         List<OrderResponse> responses = orderPage.getContent().stream()
                 .map(this::toResponse)
                 .toList();
@@ -423,9 +456,19 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public byte[] exportRefundOrders(LocalDateTime startDateTime, LocalDateTime endDateTime, String format) {
-        List<OrderEntity> orders = orderRepository.findByStatusAndCreatedAtBetween(
-                OrderStatus.CANCELLED_PENDING_REFUND, startDateTime, endDateTime);
+    public byte[] exportRefundOrders(LocalDateTime startDateTime, LocalDateTime endDateTime, String status, String format) {
+        List<OrderStatus> targetStatuses;
+        if (status != null && !status.trim().isEmpty()) {
+            targetStatuses = List.of(OrderStatus.valueOf(status.toUpperCase()));
+        } else {
+            targetStatuses = List.of(
+                    OrderStatus.CANCELLED_PENDING_REFUND,
+                    OrderStatus.CANCELLED_REFUNDED
+            );
+        }
+
+        List<OrderEntity> orders = orderRepository.findByStatusInAndCreatedAtBetween(
+                targetStatuses, startDateTime, endDateTime);
 
         if ("csv".equalsIgnoreCase(format)) {
             return generateCsv(orders);
@@ -447,7 +490,7 @@ public class OrderServiceImpl implements OrderService {
             String[] headers = {
                     "Order ID", "Customer Name", "Customer Email",
                     "Customer Phone", "Total Amount", "Order Date",
-                    "Bank Name", "Bank Account", "Account Holder"
+                    "Bank Name", "Bank Account", "Account Holder", "Status"
             };
 
             Row headerRow = sheet.createRow(0);
@@ -471,6 +514,7 @@ public class OrderServiceImpl implements OrderService {
                 row.createCell(6).setCellValue(order.getRefundBankName() != null ? order.getRefundBankName() : "");
                 row.createCell(7).setCellValue(order.getRefundBankAccount() != null ? order.getRefundBankAccount() : "");
                 row.createCell(8).setCellValue(order.getRefundAccountHolder() != null ? order.getRefundAccountHolder() : "");
+                row.createCell(9).setCellValue(translateStatus(order.getStatus()));
             }
 
             for (int i = 0; i < headers.length; i++) {
@@ -497,15 +541,17 @@ public class OrderServiceImpl implements OrderService {
             writer.println("Order ID,Customer Name,Customer Email,Total Amount,Order Date,Bank Name,Bank Account,Account Holder");
 
             for (OrderEntity order : orders) {
-                writer.printf("%d,\"%s\",\"%s\",%s,\"%s\",\"%s\",\"%s\",\"%s\"%n",
+                writer.printf("%d,\"%s\",\"%s\",\"%s\",%s,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"%n",
                         order.getId(),
                         escapeCsv(order.getUser().getFullName()),
                         escapeCsv(order.getUser().getEmail()),
+                        escapeCsv(order.getUser().getPhone()),
                         order.getTotalAmount().toPlainString(),
                         order.getCreatedAt().format(formatter),
                         escapeCsv(order.getRefundBankName()),
                         escapeCsv(order.getRefundBankAccount()),
-                        escapeCsv(order.getRefundAccountHolder()));
+                        escapeCsv(order.getRefundAccountHolder()),
+                        escapeCsv(translateStatus(order.getStatus())));
             }
             writer.flush();
             return out.toByteArray();
@@ -518,6 +564,12 @@ public class OrderServiceImpl implements OrderService {
     private String escapeCsv(String value) {
         if (value == null) return "";
         return value.replace("\"", "\"\"");
+    }
+
+    private String translateStatus(OrderStatus status) {
+        if (status == OrderStatus.CANCELLED_PENDING_REFUND) return "Chờ hoàn tiền";
+        if (status == OrderStatus.CANCELLED_REFUNDED) return "Đã hoàn tiền";
+        return status.name();
     }
 
     private OrderResponse toResponse(OrderEntity order) {
@@ -538,7 +590,7 @@ public class OrderServiceImpl implements OrderService {
                             name = item.getBundle().getName();
                         }
                     }
-                    
+
                     return OrderItemResponse.builder()
                             .id(item.getId())
                             .itemType(item.getItemType())
