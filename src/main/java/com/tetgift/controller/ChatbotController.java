@@ -110,6 +110,7 @@ public class ChatbotController {
     public ResponseEntity<ResponseData<Map<String, Integer>>> syncEmbeddings() {
         log.info("Starting embeddings sync...");
 
+        embeddingService.clearAllEmbeddings();
         int productCount = embeddingService.embedAllProducts();
         int bundleCount = embeddingService.embedAllBundles();
 

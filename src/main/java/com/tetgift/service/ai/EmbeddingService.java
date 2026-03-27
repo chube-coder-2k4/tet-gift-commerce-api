@@ -12,6 +12,7 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,22 @@ public class EmbeddingService {
     private final VectorStore vectorStore;
     private final ProductRepository productRepository;
     private final BundleRepository bundleRepository;
+    private final JdbcTemplate jdbcTemplate;
+
+    /**
+     * Clear all embeddings from vector store
+     */
+    @Transactional
+    public void clearAllEmbeddings() {
+        log.info("Clearing all embeddings from vector_store...");
+        try {
+            jdbcTemplate.execute("TRUNCATE TABLE vector_store CASCADE");
+            log.info("Cleared vector_store table successfully.");
+        } catch (Exception e) {
+            log.warn("Failed to truncate vector_store, attempting DELETE... Error: {}", e.getMessage());
+            jdbcTemplate.execute("DELETE FROM vector_store");
+        }
+    }
 
     /**
      * Generate and store embedding for a product
@@ -150,6 +167,7 @@ public class EmbeddingService {
             SearchRequest.builder()
                 .query(query)
                 .topK(topK)
+                .similarityThreshold(0.55)
                 .build()
         );
     }

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.LocalDateTime;
 
@@ -118,6 +119,27 @@ public class GlobalHandlerException {
         errorResponse.setStatus(CONFLICT.value());
         errorResponse.setError(CONFLICT.getReasonPhrase());
         errorResponse.setMessage("Dữ liệu đang được cập nhật bởi thao tác khác, vui lòng thử lại.");
+        return errorResponse;
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(CONFLICT)
+    public ErrorResponse handleDataIntegrityViolationException(DataIntegrityViolationException e, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(LocalDateTime.now());
+        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
+        errorResponse.setStatus(CONFLICT.value());
+        errorResponse.setError(CONFLICT.getReasonPhrase());
+        // Provide a helpful message while avoiding leaking SQL specifics
+        String message = "Data integrity violation. Please check request values or contact support.";
+        if (e.getMostSpecificCause() != null) {
+            String causeMsg = e.getMostSpecificCause().getMessage();
+            // If it's a known orders_status_check violation, give specific guidance
+            if (causeMsg != null && causeMsg.contains("orders_status_check")) {
+                message = "Invalid order status value. The system schema doesn't allow this status. Please update the database constraint or use a valid status.";
+            }
+        }
+        errorResponse.setMessage(message);
         return errorResponse;
     }
 
