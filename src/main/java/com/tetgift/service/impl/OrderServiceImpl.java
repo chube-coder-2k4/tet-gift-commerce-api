@@ -488,7 +488,7 @@ public class OrderServiceImpl implements OrderService {
             headerStyle.setFont(headerFont);
 
             String[] headers = {
-                    "Order ID", "Customer Name", "Customer Email",
+                    "Order ID", "Status", "Customer Name", "Customer Email",
                     "Customer Phone", "Total Amount", "Order Date",
                     "Bank Name", "Bank Account", "Account Holder", "Status"
             };
@@ -538,7 +538,7 @@ public class OrderServiceImpl implements OrderService {
             out.write(0xBF);
 
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-            writer.println("Order ID,Customer Name,Customer Email,Total Amount,Order Date,Bank Name,Bank Account,Account Holder");
+            writer.println("Order ID,Customer Name,Customer Email,Customer Phone,Total Amount,Order Date,Bank Name,Bank Account,Account Holder,Status");
 
             for (OrderEntity order : orders) {
                 writer.printf("%d,\"%s\",\"%s\",\"%s\",%s,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"%n",

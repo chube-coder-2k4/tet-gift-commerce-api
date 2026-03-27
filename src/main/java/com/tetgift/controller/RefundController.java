@@ -65,6 +65,7 @@ public class RefundController {
     @Operation(summary = "Export refund list",
             description = "Export refund orders to Excel or CSV. Format: xlsx or csv")
     public ResponseEntity<byte[]> exportRefunds(
+            @RequestParam(required = false, defaultValue = "ALL") String filterStatus,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) String status,
