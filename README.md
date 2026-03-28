@@ -54,9 +54,7 @@ graph TD
 ## ✨ Features
 
 
-  - Đăng ký, đăng nhập tài khoản.
-  - Hỗ trợ đăng nhập qua Google OAuth2.
-  - Phân quyền theo cấp độ (Role: Admin / User / Lawyer).
+
 - **🛍 Sản phẩm & Quà tặng (Products & Bundles):**
   - Quản lý danh mục, sản phẩm, hình ảnh lưu trữ trực tiếp trên Cloudinary.
   - Tính năng **Custom Combo**: Cho phép khách hàng tự thiết kế giỏ quà từ các thành phần lẻ.
