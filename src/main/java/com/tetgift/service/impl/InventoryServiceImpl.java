@@ -63,19 +63,17 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     public PageResponse<InventoryBatchResponse> getBatchesByProduct(Long productId, int page, int size) {
-        // 1. Tạo đối tượng phân trang, sắp xếp theo hạn sử dụng tăng dần (ASC)
         Pageable pageable = PageRequest.of(page, size, Sort.by("expiryDate").ascending());
 
-        // 2. Thực hiện truy vấn từ Repository
-        // Lưu ý: Bạn nên viết hàm findByProductId trong InventoryBatchRepository trả về Page
+
         Page<InventoryBatchEntity> batchPage = batchRepository.findByProductId(productId, pageable);
 
-        // 3. Chuyển đổi từ Entity sang DTO
+
         List<InventoryBatchResponse> data = batchPage.getContent().stream()
-                .map(this::mapToBatchResponse) // Sử dụng một hàm helper để map dữ liệu
+                .map(this::mapToBatchResponse)
                 .toList();
 
-        // 4. Trả về đối tượng PageResponse theo cấu trúc của bạn
+
         return PageResponse.<InventoryBatchResponse>builder()
                 .pageNo(page)
                 .pageSize(size)

@@ -21,8 +21,6 @@ public interface InventoryBatchRepository extends JpaRepository<InventoryBatchEn
             Long productId, Integer quantity, LocalDate now);
 
 
-    List<InventoryBatchEntity> findByProductIdOrderByCreatedAtDesc(Long productId);
-
 
     @Query("SELECT b FROM InventoryBatchEntity b JOIN FETCH b.product")
     Page<InventoryBatchEntity> findAllWithProduct(Pageable pageable);
@@ -30,8 +28,5 @@ public interface InventoryBatchRepository extends JpaRepository<InventoryBatchEn
 
     List<InventoryBatchEntity> findByProductIdOrderByExpiryDateAsc(Long productId);
 
-    @Query("SELECT b FROM InventoryBatchEntity b JOIN FETCH b.product p " +
-            "WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-            "OR LOWER(b.batchCode) LIKE LOWER(CONCAT('%', :keyword, '%'))")
-    Page<InventoryBatchEntity> searchBatches(@Param("keyword") String keyword, Pageable pageable);
+
 }
