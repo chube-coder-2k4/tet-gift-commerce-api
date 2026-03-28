@@ -20,7 +20,7 @@ public class ProductRequest {
     @Size(max = 255, message = "Product name must be less than 255 characters")
     private String name;
 
-    @Size(max = 5000, message = "Description must be less than 5000 characters")
+    @Size(max = 50000, message = "Description must be less than 50000 characters")
     private String description;
 
     @NotNull(message = "Price is required")
@@ -40,16 +40,12 @@ public class ProductRequest {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate expDate;
 
-    @NotNull
-    private Integer importQuantity; // Số lượng nhập vào ban đầu
 
-    @NotBlank(message = "batchCode is required")
-    private String batchCode;      // Mã lô (VD: LÔ-001)
+    private Integer importQuantity;
 
-    @NotNull(message = "Import Price is required")
-    @Positive(message = "Import Price must be positive")
-    @Min(value = 1000, message = "Import Price must be at least 1,000 VND")
-    private BigDecimal importPrice; // Giá nhập hàng
+    private String batchCode;
+
+    private BigDecimal importPrice;
 
     private List<ProductImageRequest> images;
 

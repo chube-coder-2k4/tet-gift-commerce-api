@@ -54,22 +54,22 @@ public class ProductController {
                 ));
     }
 
-    @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @PreAuthorize("hasRole('ADMIN')")
-//    @PreAuthorize("hasAuthority('ROLE_ROLE_ADMIN')")
-    @Operation(summary = "Register Product (JSON)", description = "Register a new product without file upload (image URLs in JSON body)")
-    public ResponseEntity<ResponseData<Long>> registerProductJson(
-        @RequestBody @Valid ProductRequest productRequest
-    ) {
-        Long productId = productService.saveProduct(productRequest);
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(new ResponseData<>(
-                        HttpStatus.CREATED.value(),
-                        "Product registered successfully",
-                        productId
-                ));
-    }
+//    @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
+//    @PreAuthorize("hasRole('ADMIN')")
+////    @PreAuthorize("hasAuthority('ROLE_ROLE_ADMIN')")
+//    @Operation(summary = "Register Product (JSON)", description = "Register a new product without file upload (image URLs in JSON body)")
+//    public ResponseEntity<ResponseData<Long>> registerProductJson(
+//        @RequestBody @Valid ProductRequest productRequest
+//    ) {
+//        Long productId = productService.saveProduct(productRequest);
+//        return ResponseEntity
+//                .status(HttpStatus.CREATED)
+//                .body(new ResponseData<>(
+//                        HttpStatus.CREATED.value(),
+//                        "Product registered successfully",
+//                        productId
+//                ));
+//    }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get Product by ID", description = "Retrieve product details by its ID (includes all images)")

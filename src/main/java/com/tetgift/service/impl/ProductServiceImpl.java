@@ -51,6 +51,104 @@ public class ProductServiceImpl implements ProductService {
         return productMapper.toResponse(product);
     }
 
+//    @Override
+//    @Transactional
+//    public Long saveProduct(ProductRequest request) {
+//        return saveProductInternal(request, null);
+//    }
+//
+//    @Override
+//    @Transactional
+//    public Long saveProduct(ProductRequest request, MultipartFile[] images) {
+//        return saveProductInternal(request, images);
+//    }
+//
+//    private Long saveProductInternal(ProductRequest request, MultipartFile[] images) {
+//        try {
+//            Optional<ProductEntity> existingProduct = productRepository.findByName(request.getName());
+//
+//            ProductEntity product;
+//            if (existingProduct.isPresent()) {
+//                product = existingProduct.get();
+//                // Cập nhật tổng tồn kho của Product
+//                int newStock = (request.getStock() != null ? request.getStock() : 0);
+//                product.setStock(product.getStock() + newStock);
+//                // Có thể update thêm giá bán nếu cần
+//                product.setPrice(request.getPrice());
+//            }
+//                else {
+//                 product = ProductEntity.builder()
+//                        .name(request.getName())
+//                        .description(request.getDescription())
+//                        .price(request.getPrice())
+//                        .stock(request.getStock() != null ? request.getStock() : 0)
+//                        .isActive(true)
+//                        .manufactureDate(request.getManufactureDate())
+//                        .expDate(request.getExpDate())
+//                        .build();
+//            }
+//            // Set category
+//            if (request.getCategoryId() != null) {
+//                Category category = categoryRepository.findByIdAndIsActiveTrue(request.getCategoryId())
+//                        .orElseThrow(() -> new CategoryNotFoundException(
+//                                "Category not found with id: " + request.getCategoryId()));
+//                product.setCategory(category);
+//            }
+//
+//            // Handle JSON image requests (URLs passed directly)
+//            if (request.getImages() != null && !request.getImages().isEmpty()) {
+//                List<ProductImageEntity> imageEntities = request.getImages().stream()
+//                        .map(imgReq -> ProductImageEntity.builder()
+//                                .imageUrl(imgReq.getImageUrl())
+//                                .imageType(imgReq.getImageType())
+//                                .publicId(imgReq.getPublicId())
+//                                .isPrimary(imgReq.isPrimary())
+//                                .product(product)
+//                                .build())
+//                        .toList();
+//                product.setProductImages(new ArrayList<>(imageEntities));
+//            }
+//
+//            // Handle multipart file uploads → upload to Cloudinary and create ProductImageEntity
+//            if (images != null && images.length > 0) {
+//                uploadAndAttachImages(product, images);
+//            }
+//
+//            // Ensure at least one image is marked as primary
+//            ensureOnePrimaryImage(product);
+//
+//            // Set the legacy `image` field to the primary image URL for backward compatibility
+//            syncPrimaryImageField(product);
+//
+//            ProductEntity saved = productRepository.save(product);
+//
+//            if (saved.getStock() > 0) {
+//                int quantityToEntry = (request.getImportQuantity() != null && request.getImportQuantity() > 0)
+//                        ? request.getImportQuantity()
+//                        : request.getStock();
+//                InventoryBatchEntity initialBatch = InventoryBatchEntity.builder()
+//                        .product(saved)
+//                        .batchCode(request.getBatchCode() != null ? request.getBatchCode() : "BATCH-INIT-" + saved.getId())
+
+    /// /                        .importQuantity(request.getImportQuantity())
+    /// /                        .currentQuantity(request.getImportQuantity())
+//                        .importQuantity(quantityToEntry)
+//                        .currentQuantity(quantityToEntry)
+//                        // Lấy importPrice từ request
+//                        .importPrice(request.getImportPrice() != null ? request.getImportPrice() : request.getPrice().multiply(new BigDecimal("0.7")))
+//
+//                        .manufactureDate(request.getManufactureDate())
+//                        .expiryDate(request.getExpDate())
+//                        .build();
+//                batchRepository.save(initialBatch);
+//                log.info("Initial batch created for product: {}", saved.getId());
+//            }
+//            log.info("Product created with {} images, id={}", saved.getProductImages().size(), saved.getId());
+//            return saved.getId();
+//        } catch (IOException e) {
+//            throw new RuntimeException("Failed to upload image", e);
+//        }
+//    }
     @Override
     @Transactional
     public Long saveProduct(ProductRequest request) {
@@ -65,87 +163,106 @@ public class ProductServiceImpl implements ProductService {
 
     private Long saveProductInternal(ProductRequest request, MultipartFile[] images) {
         try {
-            Optional<ProductEntity> existingProduct = productRepository.findByName(request.getName());
+            ProductEntity product = getOrCreateProductEntity(request);
 
-            ProductEntity product;
-            if (existingProduct.isPresent()) {
-                product = existingProduct.get();
-                // Cập nhật tổng tồn kho của Product
-                int newStock = (request.getStock() != null ? request.getStock() : 0);
-                product.setStock(product.getStock() + newStock);
-                // Có thể update thêm giá bán nếu cần
-                product.setPrice(request.getPrice());
-            }
-                else {
-                 product = ProductEntity.builder()
-                        .name(request.getName())
-                        .description(request.getDescription())
-                        .price(request.getPrice())
-                        .stock(request.getStock() != null ? request.getStock() : 0)
-                        .isActive(true)
-                        .manufactureDate(request.getManufactureDate())
-                        .expDate(request.getExpDate())
-                        .build();
-            }
-            // Set category
-            if (request.getCategoryId() != null) {
-                Category category = categoryRepository.findByIdAndIsActiveTrue(request.getCategoryId())
-                        .orElseThrow(() -> new CategoryNotFoundException(
-                                "Category not found with id: " + request.getCategoryId()));
-                product.setCategory(category);
-            }
+            assignCategoryToProduct(request.getCategoryId(), product);
 
-            // Handle JSON image requests (URLs passed directly)
-            if (request.getImages() != null && !request.getImages().isEmpty()) {
-                List<ProductImageEntity> imageEntities = request.getImages().stream()
-                        .map(imgReq -> ProductImageEntity.builder()
-                                .imageUrl(imgReq.getImageUrl())
-                                .imageType(imgReq.getImageType())
-                                .publicId(imgReq.getPublicId())
-                                .isPrimary(imgReq.isPrimary())
-                                .product(product)
-                                .build())
-                        .toList();
-                product.setProductImages(new ArrayList<>(imageEntities));
-            }
+            processProductImages(request, images, product);
 
-            // Handle multipart file uploads → upload to Cloudinary and create ProductImageEntity
-            if (images != null && images.length > 0) {
-                uploadAndAttachImages(product, images);
-            }
-
-            // Ensure at least one image is marked as primary
             ensureOnePrimaryImage(product);
-
-            // Set the legacy `image` field to the primary image URL for backward compatibility
             syncPrimaryImageField(product);
 
-            ProductEntity saved = productRepository.save(product);
+            ProductEntity savedProduct = productRepository.save(product);
 
-            if (saved.getStock() > 0) {
-                int quantityToEntry = (request.getImportQuantity() != null && request.getImportQuantity() > 0)
-                        ? request.getImportQuantity()
-                        : request.getStock();
-                InventoryBatchEntity initialBatch = InventoryBatchEntity.builder()
-                        .product(saved)
-                        .batchCode(request.getBatchCode() != null ? request.getBatchCode() : "BATCH-INIT-" + saved.getId())
-//                        .importQuantity(request.getImportQuantity())
-//                        .currentQuantity(request.getImportQuantity())
-                        .importQuantity(quantityToEntry)
-                        .currentQuantity(quantityToEntry)
-                        // Lấy importPrice từ request
-                        .importPrice(request.getImportPrice() != null ? request.getImportPrice() : request.getPrice().multiply(new BigDecimal("0.7")))
+            createInitialBatchIfNeeded(request, savedProduct);
 
-                        .manufactureDate(request.getManufactureDate())
-                        .expiryDate(request.getExpDate())
-                        .build();
-                batchRepository.save(initialBatch);
-                log.info("Initial batch created for product: {}", saved.getId());
-            }
-            log.info("Product created with {} images, id={}", saved.getProductImages().size(), saved.getId());
-            return saved.getId();
+            log.info("Product saved successfully with id={}", savedProduct.getId());
+            return savedProduct.getId();
+
         } catch (IOException e) {
-            throw new RuntimeException("Failed to upload image", e);
+            log.error("Error uploading images for product: {}", request.getName(), e);
+            throw new RuntimeException("Failed to upload product images", e);
+        }
+    }
+
+
+    private ProductEntity getOrCreateProductEntity(ProductRequest request) {
+        return productRepository.findByName(request.getName())
+                .map(existingProduct -> {
+                    int addedStock = (request.getStock() != null) ? request.getStock() : 0;
+                    existingProduct.setStock(existingProduct.getStock() + addedStock);
+                    existingProduct.setPrice(request.getPrice());
+                    return existingProduct;
+                })
+                .orElseGet(() ->
+                        ProductEntity.builder()
+                                .name(request.getName())
+                                .description(request.getDescription())
+                                .price(request.getPrice())
+                                .stock(request.getStock() != null ? request.getStock() : 0)
+                                .isActive(true)
+                                .manufactureDate(request.getManufactureDate())
+                                .expDate(request.getExpDate())
+                                .build()
+                );
+    }
+
+    private void assignCategoryToProduct(Long categoryId, ProductEntity product) {
+        if (categoryId != null) {
+            Category category = categoryRepository.findByIdAndIsActiveTrue(categoryId)
+                    .orElseThrow(() -> new CategoryNotFoundException("Category not found with id: " + categoryId));
+            product.setCategory(category);
+        }
+    }
+
+    private void processProductImages(ProductRequest request, MultipartFile[] images, ProductEntity product) throws IOException {
+        // Handle JSON image requests (URLs passed directly)
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            List<ProductImageEntity> imageEntities = request.getImages().stream()
+                    .map(imgReq -> ProductImageEntity.builder()
+                            .imageUrl(imgReq.getImageUrl())
+                            .imageType(imgReq.getImageType())
+                            .publicId(imgReq.getPublicId())
+                            .isPrimary(imgReq.isPrimary())
+                            .product(product)
+                            .build())
+                    .toList();
+
+            if (product.getProductImages() == null) {
+                product.setProductImages(new ArrayList<>());
+            }
+            product.getProductImages().addAll(imageEntities);
+        }
+
+        if (images != null && images.length > 0) {
+            uploadAndAttachImages(product, images);
+        }
+    }
+
+    private void createInitialBatchIfNeeded(ProductRequest request, ProductEntity savedProduct) {
+        if (request.getImportQuantity() != null && request.getImportQuantity() > 0) {
+
+            // 1. Bắt validation lô hàng
+            if (request.getBatchCode() == null || request.getBatchCode().trim().isEmpty()) {
+                throw new IllegalArgumentException("Mã lô hàng không được để trống khi nhập kho.");
+            }
+            if (request.getImportPrice() == null || request.getImportPrice().compareTo(new BigDecimal("1000")) < 0) {
+                throw new IllegalArgumentException("Giá nhập gốc phải lớn hơn hoặc bằng 1000 VNĐ.");
+            }
+
+            // 2. Pass validation rồi thì lưu Lô hàng
+            InventoryBatchEntity initialBatch = InventoryBatchEntity.builder()
+                    .product(savedProduct)
+                    .batchCode(request.getBatchCode())
+                    .importQuantity(request.getImportQuantity())
+                    .currentQuantity(request.getImportQuantity())
+                    .importPrice(request.getImportPrice())
+                    .manufactureDate(request.getManufactureDate())
+                    .expiryDate(request.getExpDate())
+                    .build();
+
+            batchRepository.save(initialBatch);
+            log.info("Initial batch created for product: {}", savedProduct.getId());
         }
     }
 
