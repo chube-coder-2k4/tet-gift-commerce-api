@@ -50,105 +50,6 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
         return productMapper.toResponse(product);
     }
-
-//    @Override
-//    @Transactional
-//    public Long saveProduct(ProductRequest request) {
-//        return saveProductInternal(request, null);
-//    }
-//
-//    @Override
-//    @Transactional
-//    public Long saveProduct(ProductRequest request, MultipartFile[] images) {
-//        return saveProductInternal(request, images);
-//    }
-//
-//    private Long saveProductInternal(ProductRequest request, MultipartFile[] images) {
-//        try {
-//            Optional<ProductEntity> existingProduct = productRepository.findByName(request.getName());
-//
-//            ProductEntity product;
-//            if (existingProduct.isPresent()) {
-//                product = existingProduct.get();
-//                // Cập nhật tổng tồn kho của Product
-//                int newStock = (request.getStock() != null ? request.getStock() : 0);
-//                product.setStock(product.getStock() + newStock);
-//                // Có thể update thêm giá bán nếu cần
-//                product.setPrice(request.getPrice());
-//            }
-//                else {
-//                 product = ProductEntity.builder()
-//                        .name(request.getName())
-//                        .description(request.getDescription())
-//                        .price(request.getPrice())
-//                        .stock(request.getStock() != null ? request.getStock() : 0)
-//                        .isActive(true)
-//                        .manufactureDate(request.getManufactureDate())
-//                        .expDate(request.getExpDate())
-//                        .build();
-//            }
-//            // Set category
-//            if (request.getCategoryId() != null) {
-//                Category category = categoryRepository.findByIdAndIsActiveTrue(request.getCategoryId())
-//                        .orElseThrow(() -> new CategoryNotFoundException(
-//                                "Category not found with id: " + request.getCategoryId()));
-//                product.setCategory(category);
-//            }
-//
-//            // Handle JSON image requests (URLs passed directly)
-//            if (request.getImages() != null && !request.getImages().isEmpty()) {
-//                List<ProductImageEntity> imageEntities = request.getImages().stream()
-//                        .map(imgReq -> ProductImageEntity.builder()
-//                                .imageUrl(imgReq.getImageUrl())
-//                                .imageType(imgReq.getImageType())
-//                                .publicId(imgReq.getPublicId())
-//                                .isPrimary(imgReq.isPrimary())
-//                                .product(product)
-//                                .build())
-//                        .toList();
-//                product.setProductImages(new ArrayList<>(imageEntities));
-//            }
-//
-//            // Handle multipart file uploads → upload to Cloudinary and create ProductImageEntity
-//            if (images != null && images.length > 0) {
-//                uploadAndAttachImages(product, images);
-//            }
-//
-//            // Ensure at least one image is marked as primary
-//            ensureOnePrimaryImage(product);
-//
-//            // Set the legacy `image` field to the primary image URL for backward compatibility
-//            syncPrimaryImageField(product);
-//
-//            ProductEntity saved = productRepository.save(product);
-//
-//            if (saved.getStock() > 0) {
-//                int quantityToEntry = (request.getImportQuantity() != null && request.getImportQuantity() > 0)
-//                        ? request.getImportQuantity()
-//                        : request.getStock();
-//                InventoryBatchEntity initialBatch = InventoryBatchEntity.builder()
-//                        .product(saved)
-//                        .batchCode(request.getBatchCode() != null ? request.getBatchCode() : "BATCH-INIT-" + saved.getId())
-
-    /// /                        .importQuantity(request.getImportQuantity())
-    /// /                        .currentQuantity(request.getImportQuantity())
-//                        .importQuantity(quantityToEntry)
-//                        .currentQuantity(quantityToEntry)
-//                        // Lấy importPrice từ request
-//                        .importPrice(request.getImportPrice() != null ? request.getImportPrice() : request.getPrice().multiply(new BigDecimal("0.7")))
-//
-//                        .manufactureDate(request.getManufactureDate())
-//                        .expiryDate(request.getExpDate())
-//                        .build();
-//                batchRepository.save(initialBatch);
-//                log.info("Initial batch created for product: {}", saved.getId());
-//            }
-//            log.info("Product created with {} images, id={}", saved.getProductImages().size(), saved.getId());
-//            return saved.getId();
-//        } catch (IOException e) {
-//            throw new RuntimeException("Failed to upload image", e);
-//        }
-//    }
     @Override
     @Transactional
     public Long saveProduct(ProductRequest request) {
@@ -242,7 +143,7 @@ public class ProductServiceImpl implements ProductService {
     private void createInitialBatchIfNeeded(ProductRequest request, ProductEntity savedProduct) {
         if (request.getImportQuantity() != null && request.getImportQuantity() > 0) {
 
-            // 1. Bắt validation lô hàng
+
             if (request.getBatchCode() == null || request.getBatchCode().trim().isEmpty()) {
                 throw new IllegalArgumentException("Mã lô hàng không được để trống khi nhập kho.");
             }
@@ -298,9 +199,7 @@ public class ProductServiceImpl implements ProductService {
                 product.setCategory(category);
             }
 
-            // Update images from JSON request (replace all existing JSON-based images)
             if (request.getImages() != null) {
-                // Delete old images from Cloudinary that have publicId
                 for (ProductImageEntity oldImg : product.getProductImages()) {
                     if (oldImg.getPublicId() != null && !oldImg.getPublicId().isEmpty()) {
                         try {
@@ -324,12 +223,11 @@ public class ProductServiceImpl implements ProductService {
                 product.getProductImages().addAll(imageEntities);
             }
 
-            // Handle multipart file uploads (append or replace)
+
             if (images != null && images.length > 0) {
-                // If JSON images were also provided, they're already set above
-                // If no JSON images, clear old images and upload new ones
+
                 if (request.getImages() == null) {
-                    // Delete old images from Cloudinary
+
                     for (ProductImageEntity oldImg : new ArrayList<>(product.getProductImages())) {
                         if (oldImg.getPublicId() != null && !oldImg.getPublicId().isEmpty()) {
                             try {
@@ -344,10 +242,10 @@ public class ProductServiceImpl implements ProductService {
                 uploadAndAttachImages(product, images);
             }
 
-            // Ensure at least one image is marked as primary
+
             ensureOnePrimaryImage(product);
 
-            // Sync legacy image field
+
             syncPrimaryImageField(product);
 
             productRepository.save(product);
@@ -368,7 +266,7 @@ public class ProductServiceImpl implements ProductService {
             throw new ProductNotFoundException("Product already deleted with id: " + id);
         }
 
-        // Soft delete
+
         product.setActive(false);
         productRepository.save(product);
     }
@@ -409,7 +307,7 @@ public class ProductServiceImpl implements ProductService {
             String secureUrl = (String) uploadResult.get("secure_url");
             String publicId = (String) uploadResult.get("public_id");
 
-            // First uploaded image becomes PRIMARY if no primary exists yet
+
             boolean isPrimary = !hasPrimary && i == 0;
 
             ProductImageEntity imageEntity = ProductImageEntity.builder()

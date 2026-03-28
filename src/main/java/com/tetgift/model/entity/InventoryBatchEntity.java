@@ -23,13 +23,13 @@ public class InventoryBatchEntity extends BaseEntity<Long> {
     private String batchCode;
 
     @Column(nullable = false)
-    private Integer importQuantity; // Số lượng nhập vào ban đầu
+    private Integer importQuantity;
 
     @Column(nullable = false)
-    private Integer currentQuantity; // Số lượng thực tế còn lại trong lô
+    private Integer currentQuantity;
 
     @Column(nullable = false)
-    private BigDecimal importPrice; // Giá vốn lúc nhập hàng
+    private BigDecimal importPrice;
 
     private LocalDate manufactureDate;
 

@@ -23,7 +23,7 @@ public class InvoiceEntity extends BaseEntity<Long> {
     @JoinColumn(name = "order_id", nullable = false, unique = true)
     private OrderEntity order;
 
-    // VAT info (snapshot from order)
+
     @Column(name = "company_name")
     private String companyName;
 
@@ -36,7 +36,7 @@ public class InvoiceEntity extends BaseEntity<Long> {
     @Column(name = "company_address", length = 500)
     private String companyAddress;
 
-    // Financial
+
     @Column(name = "subtotal", nullable = false)
     private BigDecimal subtotal;
 
@@ -51,7 +51,7 @@ public class InvoiceEntity extends BaseEntity<Long> {
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount;
 
-    // PDF storage
+
     @Column(name = "pdf_url", length = 500)
     private String pdfUrl;
 

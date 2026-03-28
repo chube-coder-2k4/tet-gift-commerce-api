@@ -22,7 +22,7 @@ public interface ProductRepository extends JpaRepository<ProductEntity, Long> {
 
     Page<ProductEntity> findByCategoryIdAndIsActiveTrue(Long categoryId, Pageable pageable);
 
-    // === Chatbot Query Methods ===
+
 
     /**
      * Find products by max price

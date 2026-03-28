@@ -20,7 +20,7 @@ public class OrderItemEntity extends BaseEntity<Long> {
     private OrderEntity order;
 
     @Column(name = "item_type", nullable = false, length = 20)
-    private String itemType; // "PRODUCT" or "BUNDLE"
+    private String itemType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")

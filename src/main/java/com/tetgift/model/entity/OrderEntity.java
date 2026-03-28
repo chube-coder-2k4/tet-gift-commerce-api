@@ -67,7 +67,6 @@ public class OrderEntity extends BaseEntity<Long> {
     @Builder.Default
     private BigDecimal discountAmount = BigDecimal.ZERO;
 
-    // Refund bank info
     @Column(name = "refund_bank_name", length = 100)
     private String refundBankName;
 
