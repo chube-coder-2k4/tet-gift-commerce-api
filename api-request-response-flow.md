@@ -1,8 +1,8 @@
 # API Request Response Flow Logic
 
-## 1. Bundle Management API
+## 1. Bundle Management API:
 
-### Create Bundle
+### Create Bundle:
 - **Request**: `POST /api/bundles` (Multipart Form Data)
   - `name`: String (required)
   - `description`: String
@@ -19,7 +19,7 @@
   - Saves to database.
 - **Response**: `200 OK` (returns ID of created bundle as Long)
 
-### Get Bundle By ID
+### Get Bundle By ID:
 - **Request**: `GET /api/bundles/{id}`
 - **Logic**:
   - Fetches `BundleEntity` by ID where `isActive` is true.
@@ -27,14 +27,14 @@
   - Maps to `BundleResponse` containing bundle details and a list of `BundleProductResponse` (id, productId, productName, productPrice, quantity).
 - **Response**: `200 OK` (BundleResponse)
 
-### Get All Bundles (Paginated)
+### Get All Bundles (Paginated):
 - **Request**: `GET /api/bundles` (QueryParams: `page`, `size`, `sortBy`, `sortDir`)
 - **Logic**:
   - Fetches paginated `BundleEntity` where `isActive` is true.
   - Maps results to `BundleResponse` objects.
 - **Response**: `200 OK` (PageResponse<BundleResponse>)
 
-### Update Bundle
+### Update Bundle:
 - **Request**: `PUT /api/bundles/{id}` (Multipart Form Data)
   - Same fields as Create Bundle.
 - **Logic**:
@@ -46,7 +46,7 @@
   - Saves updated entity.
 - **Response**: `200 OK` (returns ID of updated bundle as Long)
 
-### Delete Bundle
+### Delete Bundle:
 - **Request**: `DELETE /api/bundles/{id}`
 - **Logic**:
   - Fetches existing `BundleEntity` by ID.
@@ -56,9 +56,9 @@
 
 ---
 
-## 2. Cart Management API
+## 2. Cart Management API:
 
-### Get My Cart
+### Get My Cart:
 - **Request**: `GET /api/cart`
 - **Logic**:
   - Fetches current authenticated user. Throws `ForBiddenException` if not authenticated.
@@ -67,7 +67,7 @@
   - Calculates total price and total items.
 - **Response**: `200 OK` (CartResponse)
 
-### Add Item To Cart
+### Add Item To Cart:
 - **Request**: `POST /api/cart/items`
   - `CartItemRequest` (JSON)
     - `itemType`: "PRODUCT" or "BUNDLE"
@@ -84,7 +84,7 @@
   - Saves `CartEntity`.
 - **Response**: `200 OK` (CartResponse with updated items and totals)
 
-### Update Cart Item Quantity
+### Update Cart Item Quantity:
 - **Request**: `PUT /api/cart/items/{itemId}?quantity={newQuantity}`
 - **Logic**:
   - Fetches user's `CartEntity`.
@@ -93,7 +93,7 @@
   - Saves `CartEntity`.
 - **Response**: `200 OK` (CartResponse with updated items and totals)
 
-### Remove Cart Item
+### Remove Cart Item:
 - **Request**: `DELETE /api/cart/items/{itemId}`
 - **Logic**:
   - Fetches user's `CartEntity`.
@@ -101,7 +101,7 @@
   - Saves `CartEntity`.
 - **Response**: `200 OK`
 
-### Clear Cart
+### Clear Cart:
 - **Request**: `DELETE /api/cart`
 - **Logic**:
   - Fetches user's `CartEntity`.
@@ -111,9 +111,9 @@
 
 ---
 
-## 3. Order Management API
+## 3. Order Management API:
 
-### Create Order
+### Create Order:
 - **Request**: `POST /api/orders`
   - `OrderRequest` (JSON)
     - `addressId`: Long (ID of delivery address)
@@ -134,33 +134,33 @@
   - Saves `OrderEntity` and associated items. (Cart is NOT cleared immediately here to allow retries on failed payments).
 - **Response**: `200 OK` (OrderResponse)
 
-### Get Order By ID
+### Get Order By ID:
 - **Request**: `GET /api/orders/{id}`
 - **Logic**:
   - Fetches `OrderEntity` by ID.
   - Maps to `OrderResponse` including calculated subtotal, discounts applied, VAT info, and list of `OrderItemResponse` (includes `isCustomCombo` and `customComboData`).
 - **Response**: `200 OK` (OrderResponse)
 
-### Get My Orders (Paginated)
+### Get My Orders (Paginated):
 - **Request**: `GET /api/orders/my-orders` (QueryParams: `page`, `size`)
 - **Logic**:
   - Fetches order history for current authenticated user, descending by `createdAt`.
 - **Response**: `200 OK` (PageResponse<OrderResponse>)
 
-### Get All Orders (Admin - Paginated)
+### Get All Orders (Admin - Paginated):
 - **Request**: `GET /api/orders` (QueryParams: `page`, `size`)
 - **Logic**:
   - Fetches all orders across all users.
 - **Response**: `200 OK` (PageResponse<OrderResponse>)
 
-### Update Order Status (Admin)
+### Update Order Status (Admin):
 - **Request**: `PUT /api/orders/{id}/status?status={newStatus}`
 - **Logic**:
   - Updates `status` field of `OrderEntity`.
   - Sends a WebSocket notification to the user (`/queue/order-status`).
 - **Response**: `200 OK` (OrderResponse)
 
-### Cancel Order
+### Cancel Order:
 - **Request**: `PUT /api/orders/{id}/cancel`
 - **Logic**:
   - Verifies current user owns the order.

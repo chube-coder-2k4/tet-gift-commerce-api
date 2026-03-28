@@ -150,7 +150,7 @@ src/main/java/com/tetgift
    - **Chống Bottleneck:** MapStruct generate bytecode trong lúc Build thay vì dùng Reflection như ModelMapper (tối đa hóa tốc độ mapping ở Runtime).
    - **Sự ổn định của AI:** Image Docker Build được add sẵn ONNX Sentence Transformers để tránh bị timeout tải model nhúng khi ứng dụng scale out.
 
-## 🧪 Testing
+## 🧪 Testing:
 
 - **Strategy:** Thực hiện Integration / Service logic Testing trên những hàm xử lý Discount và tạo Bundle. 
 - ![Coverage](https://img.shields.io/badge/coverage-80%25-green)
