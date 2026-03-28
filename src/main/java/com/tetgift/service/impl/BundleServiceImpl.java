@@ -136,7 +136,7 @@ public class BundleServiceImpl implements BundleService {
                 bundle.setImage(imageUrl);
             }
 
-            // Update products logic ...
+
             if (request.getProducts() != null) {
                 bundle.getBundleProducts().clear();
                 List<BundleProductEntity> bundleProducts = request.getProducts().stream()
@@ -152,7 +152,7 @@ public class BundleServiceImpl implements BundleService {
                         }).toList();
                 bundle.getBundleProducts().addAll(bundleProducts);
 
-                // recalculate total price
+
                 if (!request.isCustom()) {
                     BigDecimal totalPrice = bundleProducts.stream()
                         .map(bp -> bp.getProduct().getPrice().multiply(BigDecimal.valueOf(bp.getQuantity())))
