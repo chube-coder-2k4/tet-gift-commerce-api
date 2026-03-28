@@ -53,7 +53,7 @@ graph TD
 
 ## ✨ Features
 
-- **🔐 Xử lý Định danh & Bảo mật (Auth):**
+
   - Đăng ký, đăng nhập tài khoản.
   - Hỗ trợ đăng nhập qua Google OAuth2.
   - Phân quyền theo cấp độ (Role: Admin / User / Lawyer).
