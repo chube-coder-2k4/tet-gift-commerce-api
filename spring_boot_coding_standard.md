@@ -1,7 +1,6 @@
 # 🎯 ĐẶC TẢ CHUẨN VIẾT CODE - SPRING BOOT BACKEND
 
-**Phiên bản:** 1.0  
-**Áp dụng cho:** Tất cả dự án Spring Boot trong team  
+
 **Mục đích:** Đảm bảo code nhất quán, dễ bảo trì, có khả năng mở rộng
 
 ---
