@@ -14,7 +14,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/products")
@@ -175,7 +174,7 @@ public class ProductController {
             inventoryService.disposeBatch(id);
 
             ApiResponse response = ApiResponse.builder()
-                    .status(HttpStatus.OK.value()) // 200
+                    .status(HttpStatus.OK.value())
                     .message("Xuất hủy lô hàng thành công.")
                     .build();
 

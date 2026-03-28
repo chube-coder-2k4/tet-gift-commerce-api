@@ -50,11 +50,7 @@ public class PaymentController {
         ));
     }
 
-    /**
-     * VNPay redirects user browser here after payment.
-     * BE verifies signature, updates order/payment status, then 302 redirects to FE payment-result page.
-     * Invoice generation happens AFTER transaction commits to avoid rollback issues.
-     */
+
     @GetMapping("/vnpay-callback")
     @Operation(summary = "VNPay callback", description = "Handle VNPay payment callback - redirects to frontend")
     public ResponseEntity<Void> vnpayCallback(@RequestParam Map<String, String> requestParams) {
@@ -72,14 +68,14 @@ public class PaymentController {
         String amount = "";
 
         try {
-            // Step 1: Process payment (transactional - commits here)
+
             PaymentResponse response = paymentService.handleVnPayCallback(vnpParams);
             status = response.getStatus(); // "SUCCESS" or "FAILED"
             orderId = String.valueOf(response.getOrderId());
             amount = response.getAmount() != null ? response.getAmount().toPlainString() : "0";
             log.info("VNPay callback processed: orderId={}, status={}", orderId, status);
 
-            // Step 2: Generate invoice AFTER transaction committed (non-blocking)
+
             if ("SUCCESS".equals(status) && response.getOrderId() != null) {
                 try {
                     invoiceService.generateInvoice(response.getOrderId());
@@ -87,7 +83,7 @@ public class PaymentController {
                 } catch (Exception invoiceEx) {
                     log.warn("Failed to auto-generate invoice for order {}: {}",
                             response.getOrderId(), invoiceEx.getMessage());
-                    // Don't affect payment result - invoice can be generated later
+
                 }
             }
         } catch (Exception e) {
@@ -95,7 +91,7 @@ public class PaymentController {
             status = "FAILED";
         }
 
-        // Build FE redirect URL
+
         String frontendUrl = vnPayConfig.getFrontendResultUrl();
         String redirectUrl = frontendUrl
                 + "?status=" + status

@@ -11,7 +11,7 @@
   <img alt="License" src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge">
 </p>
 
-## 📌 Overview / Mô tả dự án
+## 📌 Overview / Mô tả dự án:
 
 - **Bài toán giải quyết:** Cung cấp nền tảng thương mại điện tử chuyên biệt cho dịp Tết, giải quyết bài toán gói quà tặng tùy chỉnh (Custom Combo) và cá nhân hóa trải nghiệm qua hệ thống AI tự động tư vấn quà Tết dựa trên nhu cầu của khách hàng.
 - **Đối tượng người dùng:** Khách hàng cá nhân, doanh nghiệp có nhu cầu mua sắm giỏ quà Tết, thiết kế hộp quà mang đậm dấu ấn cá nhân hoặc thương hiệu.
@@ -20,7 +20,7 @@
   - Quản lý quá trình thanh toán nội địa qua cổng **VNPay** & Tự động xuất hóa đơn PDF (**Flying Saucer**).
   - Sử dụng **Redis** để tối ưu hóa hiệu suất load giỏ hàng, thông tin cấu hình và caching hệ thống.
 
-## 🚀 Tech Stack
+## 🚀 Tech Stack:
 
 | Category         | Technologies                                                                 |
 | ---------------- | ---------------------------------------------------------------------------- |
@@ -31,7 +31,7 @@
 | **Cloud/3rd**    | Cloudinary (Image Storage), VNPay (Payment Gateway), JavaMailSender          |
 | **DevOps**       | Docker (Multi-stage build), Docker Compose                                   |
 
-## 🏗 Architecture Overview
+## 🏗 Architecture Overview:
 
 Sơ đồ kiến trúc khái quát của hệ thống:
 
@@ -51,7 +51,7 @@ graph TD
 - **RAG Chatbot Flow:** Người dùng đặt câu hỏi -> Text Embeddings (All-MiniLM-v2 qua ONNX Runtime) -> Vector Search trong bảng dữ liệu PGVector -> Trích xuất ngữ cảnh liên quan (nearest context) -> Đưa vào prompt cho Gemini tạo câu trả lời tự nhiên.
 - **Order & Payment Flow:** Chọn sản phẩm & Custom Combo vào giỏ hàng (Cart được cache) -> Khởi tạo đơn (Order) -> Xử lý thanh toán VNPay (Sandbox) -> Call back xác nhận -> Tự động render file PDF Hóa Đơn và Gửi Email.
 
-## ✨ Features
+## ✨ Features:
 
 - **🔐 Xử lý Định danh & Bảo mật (Auth):**
   - Đăng ký, đăng nhập tài khoản.
@@ -76,7 +76,7 @@ graph TD
   - Chức năng quản trị Blog / Bài viết.
   - Cho phép người dùng đánh giá (Review) trải nghiệm mua sắm.
 
-## 📂 Project Structure
+## 📂 Project Structure:
 
 ```text
 src/main/java/com/tetgift
@@ -94,15 +94,15 @@ src/main/java/com/tetgift
 └── util/           # Chứa các helper, tiện ích dùng chung
 ```
 
-## 🛠 Getting Started
+## 🛠 Getting Started:
 
-### Prerequisites
+### Prerequisites:
 - Docker & Docker Compose
 - Java 21+
 - PostgreSQL 16+ (Hỗ trợ extension `pgvector`)
 - Redis Cache server
 
-### Cài đặt và Chạy ứng dụng
+### Cài đặt và Chạy ứng dụng:
 
 1. **Clone repository:**
    ```bash
@@ -127,7 +127,7 @@ src/main/java/com/tetgift
    - Local App: `http://localhost:8080/api/v1`
    - Production / Frontend URL: `https://store.quanghuycoder.id.vn` 
 
-## 📚 API Documentation
+## 📚 API Documentation:
 
 - **Swagger UI:** `http://localhost:8080/swagger-ui/index.html` hoặc `http://localhost:8080/v3/api-docs` (Swagger v3 tích hợp sẵn).
 - Truy cập vào tài liệu mô tả chi tiết chuẩn Request/Response đính kèm bên trong nội bộ Backend E-commerce.
@@ -140,7 +140,7 @@ src/main/java/com/tetgift
 | **Payment**     | GET    | `/api/v1/payment/vnpay`        | Bearer    |
 | **Chat AI**     | POST   | `/api/v1/chatbot/chat`         | Bearer    |
 
-## 🧠 Key Technical Decisions
+## 🧠 Key Technical Decisions:
 
 1. **Tại sao dùng PGVector cho RAG AI thay vì Milvus/Pinecone?**
    - **Trade-off:** Giảm thiểu sự phức tạp của cơ sở hạ tầng. Do volume dữ liệu sản phẩm và bài viết cho một dự án E-Commerce tầm trung thường không lên tới hàng trăm triệu document, việc tích hợp PGVector ngay trên PostgreSQL giúp tiết kiệm chi phí Cloud, deploy gọn nhẹ (Single DB). PGVector Index HNSW vẫn hoàn toàn đảm bảo tốc độ cực tốt (ms) cho truy xuất RAG của Chatbot AI và tương thích hoàn toàn với hệ sinh thái Spring Data JPA.
@@ -159,14 +159,14 @@ src/main/java/com/tetgift
   mvn test
   ```
 
-## ☁️ Deployment
+## ☁️ Deployment:
 
 - **Containerization:** Toàn bộ Backend được đóng gói chạy trên `eclipse-temurin:21-jre-jammy` nhằm đảm bảo support hoàn thiện thư viện GLIBC >= 2.27 cho Spring AI OnnxRuntime.
 - **CI/CD Pipeline:** Triển khai thông qua Docker Compose & Scripts Automation Deployment.
 - **Live Demo Link:** [Store Web App](https://store.quanghuycoder.id.vn)
 - **Live API:** [API Endpoint](https://api.quanghuycoder.id.vn)
 
-## 🗺 Roadmap & Contact
+## 🗺 Roadmap & Contact:
 
 - [x] Thiết kế Database, cấu hình PostgreSQL & Redis, JWT.
 - [x] Quản lý Module Người Dùng và Giỏ quà Tết.
