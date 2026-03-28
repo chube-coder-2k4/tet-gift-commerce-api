@@ -1,10 +1,7 @@
 package com.tetgift.controller;
 
 import com.tetgift.dto.request.ProductRequest;
-import com.tetgift.dto.response.InventoryBatchResponse;
-import com.tetgift.dto.response.PageResponse;
-import com.tetgift.dto.response.ProductResponse;
-import com.tetgift.dto.response.ResponseData;
+import com.tetgift.dto.response.*;
 import com.tetgift.service.InventoryService;
 import com.tetgift.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -180,9 +177,22 @@ public class ProductController {
     public ResponseEntity<?> disposeBatch(@PathVariable Long id) {
         try {
             inventoryService.disposeBatch(id);
-            return ResponseEntity.ok().body("Xuất hủy lô hàng thành công.");
+
+            // Trả về JSON thành công với ApiResponse
+            ApiResponse response = ApiResponse.builder()
+                    .status(HttpStatus.OK.value()) // 200
+                    .message("Xuất hủy lô hàng thành công.")
+                    .build();
+
+            return ResponseEntity.ok(response);
+
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            ApiResponse errorResponse = ApiResponse.builder()
+                    .status(HttpStatus.BAD_REQUEST.value())
+                    .message(e.getMessage())
+                    .build();
+
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 }
