@@ -80,6 +80,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     }
 
     @Override
+
     public void validateImageFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File cannot be empty");

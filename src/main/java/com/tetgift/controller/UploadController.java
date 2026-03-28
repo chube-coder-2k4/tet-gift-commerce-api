@@ -41,5 +41,6 @@ public class UploadController {
         return ResponseEntity.ok(new ResponseData<>(HttpStatus.OK.value(), "Upload successful",
                 cloudinaryService.uploadMusicFile(file, folder)));
     }
+
 }
 

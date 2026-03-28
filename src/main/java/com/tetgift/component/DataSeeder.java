@@ -67,6 +67,7 @@ public class DataSeeder implements CommandLineRunner {
                     .build());
 
             // Regular users
+
             for (int i = 1; i <= 5; i++) {
                 users.add(Users.builder()
                         .fullName("User " + i)
@@ -147,6 +148,7 @@ public class DataSeeder implements CommandLineRunner {
                     .expDate(LocalDate.now().plusMonths(12))
                     .image("https://res.cloudinary.com/dfupyxrmr/image/upload/v1/products/sample2")
                     .build());
+
 
             // Products for 'Rượu Vang'
             products.add(ProductEntity.builder()
