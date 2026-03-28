@@ -26,7 +26,6 @@ public class ProductController {
 
     @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-//    @PreAuthorize("hasAuthority('ROLE_ROLE_ADMIN')")
     @Operation(summary = "Register Product (multipart)", description = "Register a new product with multiple image upload. First image is PRIMARY, rest are COVER.")
     public ResponseEntity<ResponseData<Long>> registerProduct(
         @RequestPart("request") @Valid ProductRequest productRequest,
@@ -53,7 +52,6 @@ public class ProductController {
 
     @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-//    @PreAuthorize("hasAuthority('ROLE_ROLE_ADMIN')")
     @Operation(summary = "Register Product (JSON)", description = "Register a new product without file upload (image URLs in JSON body)")
     public ResponseEntity<ResponseData<Long>> registerProductJson(
             @RequestBody @Valid ProductRequest productRequest
@@ -160,7 +158,6 @@ public class ProductController {
     public ResponseEntity<PageResponse<InventoryBatchResponse>> getAllBatches(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
-//            @RequestParam(required = false) String keyword
     ) {
         return ResponseEntity.ok(inventoryService.getAllBatches(page, size));
     }
@@ -168,8 +165,7 @@ public class ProductController {
     @GetMapping("/{productId}/batches")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PageResponse<InventoryBatchResponse>> getBatchesByProduct(@PathVariable Long productId) {
-        // Gọi service xử lý tương ứng
-        return ResponseEntity.ok(inventoryService.getBatchesByProduct(productId, 0, 100)); // Giả sử lấy tất cả batches của sản phẩm, có thể thêm phân trang nếu cần
+        return ResponseEntity.ok(inventoryService.getBatchesByProduct(productId, 0, 100));
     }
 
     @PutMapping("/{id}/dispose")
@@ -178,7 +174,6 @@ public class ProductController {
         try {
             inventoryService.disposeBatch(id);
 
-            // Trả về JSON thành công với ApiResponse
             ApiResponse response = ApiResponse.builder()
                     .status(HttpStatus.OK.value()) // 200
                     .message("Xuất hủy lô hàng thành công.")
