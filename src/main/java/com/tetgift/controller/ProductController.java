@@ -54,22 +54,22 @@ public class ProductController {
                 ));
     }
 
-//    @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
-//    @PreAuthorize("hasRole('ADMIN')")
-////    @PreAuthorize("hasAuthority('ROLE_ROLE_ADMIN')")
-//    @Operation(summary = "Register Product (JSON)", description = "Register a new product without file upload (image URLs in JSON body)")
-//    public ResponseEntity<ResponseData<Long>> registerProductJson(
-//        @RequestBody @Valid ProductRequest productRequest
-//    ) {
-//        Long productId = productService.saveProduct(productRequest);
-//        return ResponseEntity
-//                .status(HttpStatus.CREATED)
-//                .body(new ResponseData<>(
-//                        HttpStatus.CREATED.value(),
-//                        "Product registered successfully",
-//                        productId
-//                ));
-//    }
+    @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasAuthority('ROLE_ROLE_ADMIN')")
+    @Operation(summary = "Register Product (JSON)", description = "Register a new product without file upload (image URLs in JSON body)")
+    public ResponseEntity<ResponseData<Long>> registerProductJson(
+            @RequestBody @Valid ProductRequest productRequest
+    ) {
+        Long productId = productService.saveProduct(productRequest);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(new ResponseData<>(
+                        HttpStatus.CREATED.value(),
+                        "Product registered successfully",
+                        productId
+                ));
+    }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get Product by ID", description = "Retrieve product details by its ID (includes all images)")
@@ -173,5 +173,16 @@ public class ProductController {
     public ResponseEntity<PageResponse<InventoryBatchResponse>> getBatchesByProduct(@PathVariable Long productId) {
         // Gọi service xử lý tương ứng
         return ResponseEntity.ok(inventoryService.getBatchesByProduct(productId, 0, 100)); // Giả sử lấy tất cả batches của sản phẩm, có thể thêm phân trang nếu cần
+    }
+
+    @PutMapping("/{id}/dispose")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> disposeBatch(@PathVariable Long id) {
+        try {
+            inventoryService.disposeBatch(id);
+            return ResponseEntity.ok().body("Xuất hủy lô hàng thành công.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }
