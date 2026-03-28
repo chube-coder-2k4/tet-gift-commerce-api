@@ -4,7 +4,6 @@ import com.tetgift.dto.request.ProductRequest;
 import com.tetgift.dto.response.PageResponse;
 import com.tetgift.dto.response.ProductResponse;
 import com.tetgift.exception.CategoryNotFoundException;
-import com.tetgift.exception.InvalidDataException;
 import com.tetgift.exception.ProductNotFoundException;
 import com.tetgift.mapper.ProductMapper;
 import com.tetgift.model.Category;
@@ -31,7 +30,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -117,7 +115,6 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private void processProductImages(ProductRequest request, MultipartFile[] images, ProductEntity product) throws IOException {
-        // Handle JSON image requests (URLs passed directly)
         if (request.getImages() != null && !request.getImages().isEmpty()) {
             List<ProductImageEntity> imageEntities = request.getImages().stream()
                     .map(imgReq -> ProductImageEntity.builder()
@@ -151,7 +148,6 @@ public class ProductServiceImpl implements ProductService {
                 throw new IllegalArgumentException("Giá nhập gốc phải lớn hơn hoặc bằng 1000 VNĐ.");
             }
 
-            // 2. Pass validation rồi thì lưu Lô hàng
             InventoryBatchEntity initialBatch = InventoryBatchEntity.builder()
                     .product(savedProduct)
                     .batchCode(request.getBatchCode())

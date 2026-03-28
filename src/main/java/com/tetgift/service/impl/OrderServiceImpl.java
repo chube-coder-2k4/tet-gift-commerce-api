@@ -70,7 +70,6 @@ public class OrderServiceImpl implements OrderService {
             throw new InvalidDataException("Cart is empty");
         }
 
-        // Lookup delivery address and snapshot
         Address address = addressRepository.findById(request.getAddressId())
                 .orElseThrow(() -> new ResourceNotFoundException("Address not found: " + request.getAddressId()));
 
@@ -86,7 +85,6 @@ public class OrderServiceImpl implements OrderService {
                 .vatAddress(request.getVatAddress())
                 .build();
 
-        // Snapshot cart items into order items
         BigDecimal totalAmount = BigDecimal.ZERO;
         List<OrderItemEntity> orderItems = new ArrayList<>();
 
@@ -94,8 +92,6 @@ public class OrderServiceImpl implements OrderService {
             BigDecimal price;
             if ("PRODUCT".equals(cartItem.getItemType()) && cartItem.getProduct() != null) {
                 ProductEntity product = cartItem.getProduct();
-                // THAY THẾ ĐOẠN NÀY:
-                // Gọi hàm trừ kho theo lô thay vì trừ trực tiếp vào product.stock
                 deductStockFromBatches(product, cartItem.getQuantity());
                 price = product.getPrice();
             } else if ("BUNDLE".equals(cartItem.getItemType()) && cartItem.getBundle() != null) {
@@ -103,8 +99,7 @@ public class OrderServiceImpl implements OrderService {
                 for (BundleProductEntity bundleProduct : bundle.getBundleProducts()) {
                     ProductEntity componentProduct = bundleProduct.getProduct();
                     int totalNeeded = cartItem.getQuantity() * bundleProduct.getQuantity();
-                    // THAY THẾ ĐOẠN NÀY:
-                    // Trừ kho theo lô cho từng sản phẩm thành phần trong Bundle
+
                     deductStockFromBatches(componentProduct, totalNeeded);
                 }
                 if (Boolean.TRUE.equals(cartItem.getIsCustomCombo()) && cartItem.getCustomComboData() != null) {
@@ -136,10 +131,8 @@ public class OrderServiceImpl implements OrderService {
             totalAmount = totalAmount.add(price.multiply(BigDecimal.valueOf(cartItem.getQuantity())));
         }
 
-        // ---- Subtotal (before any discounts) ----
         BigDecimal subtotalBeforeDiscount = totalAmount;
 
-        // ---- Apply Tier Discount (automatic, based on order total) ----
         int tierPercent = calculateTierDiscountPercent(totalAmount);
         BigDecimal tierDiscountAmount = BigDecimal.ZERO;
         if (tierPercent > 0) {
@@ -152,7 +145,6 @@ public class OrderServiceImpl implements OrderService {
             log.info("Applied tier discount: {}% = {} VND (subtotal: {})", tierPercent, tierDiscountAmount, subtotalBeforeDiscount);
         }
 
-        // ---- Apply Discount Code (manual, user entered) ----
         if (request.getDiscountCode() != null && !request.getDiscountCode().isEmpty()) {
             DiscountEntity discount = discountRepository
                     .findByCodeAndIsActiveTrue(request.getDiscountCode().toUpperCase())
@@ -168,7 +160,6 @@ public class OrderServiceImpl implements OrderService {
             if (discount.getUsageLimit() != null && discount.getUsageCount() >= discount.getUsageLimit()) {
                 throw new InvalidDataException("Discount code has reached its usage limit");
             }
-            // Min order check is against subtotal BEFORE tier discount
             if (discount.getMinOrderAmount() != null && subtotalBeforeDiscount.compareTo(discount.getMinOrderAmount()) < 0) {
                 throw new InvalidDataException("Order total must be at least " + discount.getMinOrderAmount()
                         + " VND to use this discount code");
@@ -181,7 +172,6 @@ public class OrderServiceImpl implements OrderService {
 
             totalAmount = totalAmount.subtract(discountAmount);
 
-            // Link discount to order
             order.setDiscount(discount);
             order.setDiscountCode(discount.getCode());
             order.setDiscountAmount(discountAmount);
@@ -331,7 +321,6 @@ public class OrderServiceImpl implements OrderService {
             throw new InvalidDataException("Sản phẩm " + product.getName() + " không đủ hàng trong các lô khả dụng.");
         }
 
-        // Cập nhật lại cột stock tổng ở Product để đồng bộ (optional)
         product.setStock(product.getStock() - neededQuantity);
         productRepository.save(product);
     }
@@ -361,7 +350,6 @@ public class OrderServiceImpl implements OrderService {
 
         OrderEntity updated = orderRepository.save(order);
 
-        // Notify via WebSocket
         try {
             messagingTemplate.convertAndSendToUser(
                     order.getUser().getUsername(),
@@ -376,22 +364,6 @@ public class OrderServiceImpl implements OrderService {
     }
 
 
-    //    public PageResponse<OrderResponse> getRefundOrders(int page, int size) {
-//        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-//        Page<OrderEntity> orderPage = orderRepository.findByStatus(OrderStatus.CANCELLED_PENDING_REFUND, pageable);
-//
-//        List<OrderResponse> responses = orderPage.getContent().stream()
-//                .map(this::toResponse)
-//                .toList();
-//
-//        return PageResponse.<OrderResponse>builder()
-//                .data(responses)
-//                .pageNo(orderPage.getNumber())
-//                .pageSize(orderPage.getSize())
-//                .totalItems(orderPage.getTotalElements())
-//                .totalPages(orderPage.getTotalPages())
-//                .build();
-//    }
     @Override
     public PageResponse<OrderResponse> getRefundOrders(String keyword, String status, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());

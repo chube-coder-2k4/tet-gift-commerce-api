@@ -4,11 +4,7 @@ import com.tetgift.dto.request.UserRequest;
 import com.tetgift.dto.request.UserUpdateRequest;
 import com.tetgift.dto.response.PageResponse;
 import com.tetgift.dto.response.UserResponse;
-import com.tetgift.model.Users;
-import jakarta.mail.MessagingException;
 
-import java.io.UnsupportedEncodingException;
-import java.util.List;
 
 public interface UserService {
 

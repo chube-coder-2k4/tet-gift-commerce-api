@@ -51,10 +51,10 @@ public class PaymentServiceImpl implements PaymentService {
 
         PaymentMethod method = PaymentMethod.valueOf(request.getMethod().toUpperCase());
 
-        // === Payment amount validation ===
+
         long totalAmountLong = order.getTotalAmount().longValue();
 
-        // Case 1: Total = 0 (free order from discount) → auto-success
+
         if (totalAmountLong == 0) {
             PaymentEntity payment = PaymentEntity.builder()
                     .order(order)
@@ -67,25 +67,25 @@ public class PaymentServiceImpl implements PaymentService {
 
             PaymentEntity saved = paymentRepository.save(payment);
 
-            // Auto-complete order
+
             order.setStatus(OrderStatus.PAID);
             orderRepository.save(order);
 
-            // Clear cart immediately
+
             clearCartForUser(order.getUser().getId());
 
             log.info("Free order auto-completed: orderId={}, userId={}", order.getId(), order.getUser().getId());
             return toResponse(saved, null);
         }
 
-        // Case 2: 0 < total < 5000 → reject
+
         if (totalAmountLong > 0 && totalAmountLong < MIN_PAYMENT_AMOUNT) {
             throw new InvalidDataException(
                     "Tổng đơn hàng phải ít nhất " + MIN_PAYMENT_AMOUNT + " VNĐ. Đơn hàng hiện tại: "
                             + order.getTotalAmount() + " VNĐ");
         }
 
-        // Case 3: total >= 5000 → normal payment flow
+
         PaymentEntity payment = PaymentEntity.builder()
                 .order(order)
                 .method(method)
@@ -95,7 +95,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         PaymentEntity saved = paymentRepository.save(payment);
 
-        // Update order status
+
         order.setStatus(OrderStatus.WAITING_PAYMENT);
         orderRepository.save(order);
 
@@ -130,7 +130,7 @@ public class PaymentServiceImpl implements PaymentService {
             throw new InvalidDataException("Tổng đơn hàng phải ít nhất " + MIN_PAYMENT_AMOUNT + " VNĐ.");
         }
 
-        // Mark previous pending payments as failed/cancelled
+
         paymentRepository.findByOrderId(orderId).ifPresent(oldPayment -> {
             if (oldPayment.getStatus() == PaymentStatus.PENDING) {
                 oldPayment.setStatus(PaymentStatus.FAILED);
@@ -138,7 +138,7 @@ public class PaymentServiceImpl implements PaymentService {
             }
         });
 
-        // Create new payment entity to get a new unique ID for VNPay vnp_TxnRef
+
         PaymentEntity newPayment = PaymentEntity.builder()
                 .order(order)
                 .method(PaymentMethod.VN_PAY)
@@ -185,7 +185,6 @@ public class PaymentServiceImpl implements PaymentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found: " + paymentId));
 
         if ("00".equals(responseCode)) {
-            // Only update if not already success
             if (payment.getStatus() != PaymentStatus.SUCCESS) {
                 payment.setStatus(PaymentStatus.SUCCESS);
                 payment.setTransactionId(transactionId);
@@ -195,7 +194,6 @@ public class PaymentServiceImpl implements PaymentService {
                 order.setStatus(OrderStatus.PAID);
                 orderRepository.save(order);
 
-                // VNPay success: clear cart now
                 clearCartForUser(order.getUser().getId());
             }
         } else {
@@ -226,7 +224,6 @@ public class PaymentServiceImpl implements PaymentService {
             requestParams.remove("vnp_SecureHash");
         }
 
-        // Check checksum
         String signValue = VNPayUtil.hashAllFields(requestParams);
         String vnp_SecureHash_Check = VNPayUtil.hmacSHA512(vnPayConfig.getHashSecret(), signValue);
 
@@ -234,7 +231,6 @@ public class PaymentServiceImpl implements PaymentService {
             return VnPayIpnResponse.builder().rspCode("97").message("Invalid Checksum").build();
         }
 
-        // Handle payment logic
         String txnRef = requestParams.get("vnp_TxnRef");
         String responseCode = requestParams.get("vnp_ResponseCode");
         String transactionNo = requestParams.get("vnp_TransactionNo");
@@ -252,7 +248,6 @@ public class PaymentServiceImpl implements PaymentService {
             return VnPayIpnResponse.builder().rspCode("01").message("Order not found").build();
         }
 
-        // Check amount if necessary (compare request amount vs saved amount)
         long vnpAmount = Long.parseLong(amount);
         long checkAmount = (long) (payment.getAmount().doubleValue() * 100);
 
@@ -273,7 +268,6 @@ public class PaymentServiceImpl implements PaymentService {
             order.setStatus(OrderStatus.PAID);
             orderRepository.save(order);
 
-            // VNPay IPN success: clear cart now
             clearCartForUser(order.getUser().getId());
         } else {
             payment.setStatus(PaymentStatus.FAILED);

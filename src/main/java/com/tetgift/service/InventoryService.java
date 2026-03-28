@@ -8,6 +8,5 @@ public interface InventoryService {
 
     PageResponse<InventoryBatchResponse> getBatchesByProduct(Long productId, int page, int size);
 
-    //    PageResponse<InventoryBatchResponse> getAllBatches(int page, int size, String keyword);
     void disposeBatch(Long batchId);
 }
